@@ -18,6 +18,7 @@ export async function POST(req) {
     await connectDB();
     const rawBody = await req.text();
     const event = JSON.parse(rawBody);
+    
     const signature = req.headers.get("x-razorpay-signature");
 
     if (!verifySignature(event, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
