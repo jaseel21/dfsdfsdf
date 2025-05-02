@@ -5,7 +5,7 @@ import Donation from "../../../models/Donation";
 import Subscription from "../../../models/Subscription";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import twilioClient from "../../../lib/twilio"; // ensure you have a twilioClient configured
+ // ensure you have a twilioClient configured
 
 const verifySignature = (body, signature, secret) => {
   const hmac = crypto.createHmac("sha256", secret);
@@ -27,7 +27,7 @@ export async function POST(req) {
     if (event.event === "subscription.charged") {
       const subscriptionId = event.payload.subscription.entity.id;
       const paymentId = event.payload.payment.entity.id;
-      const amount = event.payload.payment.entity.amount / 100;
+      // const amount = event.payload.payment.entity.amount / 100;
 
       const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (!subscription || subscription.status !== "active") {
@@ -63,19 +63,19 @@ export async function POST(req) {
         { new: true }
       );
 
-      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-      const toNumber = subscription.phone.startsWith("+")
-        ? `whatsapp:${subscription.phone}`
-        : `whatsapp:+91${subscription.phone}`;
-      try {
-        await twilioClient.messages.create({
-          body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
-          from: fromNumber,
-          to: toNumber,
-        });
-      } catch (twilioError) {
-        console.error("Twilio error:", twilioError.message);
-      }
+      // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+      // const toNumber = subscription.phone.startsWith("+")
+      //   ? `whatsapp:${subscription.phone}`
+      //   : `whatsapp:+91${subscription.phone}`;
+      // try {
+      //   await twilioClient.messages.create({
+      //     body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
+      //     from: fromNumber,
+      //     to: toNumber,
+      //   });
+      // } catch (twilioError) {
+      //   console.error("Twilio error:", twilioError.message);
+      // }
       return NextResponse.json({ received: true });
     }
 
