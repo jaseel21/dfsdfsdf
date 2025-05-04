@@ -415,19 +415,31 @@ export default function SubscriptionPage() {
         return;
       }
 
+      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
+
       const orderResponse = await fetch("/api/donations/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
         },
-        body: JSON.stringify({ amount: formData.amount * 100 }),
+        body: JSON.stringify({
+           amount: formData.amount * 100,
+           name: formData.fullName,
+            phone: phoneNumber,
+            period: formData.period,
+            type: "Subscription",
+            method: "manual",
+            email: formData.email,
+            district,
+            panchayat: panchayat || null,
+           }),
       });
 
       const orderData = await orderResponse.json();
       if (!orderResponse.ok) throw new Error(orderData.error || "Order creation failed");
 
-      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
+      
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_YourKeyIDHere",
@@ -454,21 +466,21 @@ export default function SubscriptionPage() {
           };
 
           startLoading();
-          const saveResponse = await fetch("/api/subscriptions/new", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-            },
-            body: JSON.stringify(subscriptionData),
-          });
+          // const saveResponse = await fetch("/api/subscriptions/new", {
+          //   method: "POST",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          //   },
+          //   body: JSON.stringify(subscriptionData),
+          // });
 
-          const saveData = await saveResponse.json();
-          if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save subscription");
+          // const saveData = await saveResponse.json();
+          // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save subscription");
 
-          if (saveData.exist) {
+         
             // alert("You are already a subscription user.");
-          } else {
+        
             stopLoading();
             router.push(
               `/subscription/success?subscriptionId=${saveData.id}&amount=${formData.amount}&name=${encodeURIComponent(
@@ -477,7 +489,7 @@ export default function SubscriptionPage() {
                 response.razorpay_payment_id
               }&orderId=${response.razorpay_order_id}`
             );
-          }
+        
 
           setSuccessMessageContent({
             title: "Subscription Activated!",

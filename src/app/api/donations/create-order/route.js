@@ -49,9 +49,9 @@ export async function POST(req) {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
-    if (phone && !/^[0-9]{10}$/.test(phone)) {
-      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
-    }
+    // if (phone && !/^[0-9]{10}$/.test(phone)) {
+    //   return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+    // }
 
 
 

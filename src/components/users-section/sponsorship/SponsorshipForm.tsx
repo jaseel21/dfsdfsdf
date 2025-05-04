@@ -98,13 +98,20 @@ export const SponsorshipForm = ({
     e.preventDefault();
     startLoading();
     setIsLoading(true);
-
+  
     try {
+      // Validate amount
+      if (isNaN(form.amount) || form.amount <= 0) {
+        throw new Error("Invalid amount");
+      }
+      console.log("Form Amount (INR):", form.amount, "Sending to API (paise):", form.amount * 100);
+      alert(`Amount: ${form.amount} INR`);
+  
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) throw new Error("Failed to load Razorpay SDK");
+  
       const [district, panchayath] = form.location.split(", ").map((part) => part.trim());
-
-
+  
       const response = await fetch("/api/donations/create-order", {
         method: "POST",
         headers: {
@@ -112,7 +119,7 @@ export const SponsorshipForm = ({
           "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
         body: JSON.stringify({
-          amount: form.amount,
+          amount: form.amount * 100, // Send in paise
           name: form.fullName,
           phone: form.phoneNumber,
           type: form.type === "Yatheem" ? "Sponsor-Yatheem" : "Sponsor-Hafiz",
@@ -123,15 +130,15 @@ export const SponsorshipForm = ({
           panchayat: panchayath,
         }),
       });
-
+  
       const orderData: { orderId: string; error?: string } = await response.json();
+      console.log("Order Data:", orderData);
       if (!response.ok) throw new Error(orderData.error || "Order creation failed");
-
-
+  
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_YourKeyIDHere",
-          amount: form.amount * 100,
+          amount: form.amount * 100, // Convert INR to paise
           currency: "INR",
           name: "AIC Amal App",
           description: `Sponsorship for ${form.type} (${form.period})`,
@@ -153,7 +160,7 @@ export const SponsorshipForm = ({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpaySignature: response.razorpay_signature,
               };
-
+  
               startLoading();
               // const saveResponse = await fetch("/api/sponsorships/create", {
               //   method: "POST",
@@ -163,10 +170,10 @@ export const SponsorshipForm = ({
               //   },
               //   body: JSON.stringify(paymentData),
               // });
-
+  
               // const saveData: { id: string; error?: string } = await saveResponse.json();
               // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
-
+  
               router.push(
                 `/sponsorship/success?donationId=${"no id"}&amount=${form.amount}&name=${encodeURIComponent(
                   form.fullName
@@ -176,9 +183,9 @@ export const SponsorshipForm = ({
                   response.razorpay_order_id
                 }`
               );
-
+  
               stopLoading();
-
+  
               if (onSubmit) await onSubmit(form);
               resolve({
                 paymentId: response.razorpay_payment_id,
@@ -191,15 +198,15 @@ export const SponsorshipForm = ({
           prefill: { name: form.fullName, contact: form.phoneNumber },
           theme: { color: "#10B981" },
         };
-
+  
         const rzp = new window.Razorpay(options);
         rzp.open();
       });
     } catch (error) {
       console.error("Payment error:", error);
-      throw error;
+      alert("Payment failed: ");
     } finally {
-      setIsLoading(true);
+      setIsLoading(false); // Fixed: Set to false to stop loading
       stopLoading();
     }
   };

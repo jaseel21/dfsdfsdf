@@ -3,6 +3,7 @@ import Donation from "../../../models/Donation";
 import Subscription from "../../../models/Subscription";
 import Sponsor from "@/models/Sponsor";
 import { NextResponse } from "next/server";
+import  Donor from "@/models/Donor"
 import crypto from "crypto";
 
 const verifySignature = (body, signature, secret) => {
@@ -107,7 +108,7 @@ export async function POST(req) {
         period,
       } = payment.notes || {};
 
-      if(type==="General" || "Yatheem" || "Hafiz" || "Bullding"){
+      if(type==="General" || "Yatheem" || "Hafiz" || "Bullding" || "Box"){
         const donation = new Donation({
           amount,
           type: type || "General",
@@ -167,6 +168,44 @@ export async function POST(req) {
   
         await sponsor.save();
         console.log("One-time donation recorded:", Sponsor);
+      }else if(type==="Subscription"){
+         let donor = await Donor.findOne({ phone });
+            if (!donor) {
+              console.log("Creating new donor...");
+              donor = await Donor.create({ name, phone,email, period });
+            } else {
+              console.log("Donor already exists:", donor);
+              return NextResponse.json({ exist: true });
+            }
+
+            const subscription = await Subscription.create({
+                  donorId: donor._id,
+                  name:fullName,
+                  phone,
+                  amount,
+                  period,
+                  email:emailAddress,
+                  district,
+                  panchayat,
+                  method:"manual",
+                  status:"active"
+                });
+
+                const newDonation = await Sdonation.create({
+                      donorId: donor._id,
+                      subscriptionId: subscription._id,
+                      phone,
+                      name:fullName,
+                      amount,
+                      email:emailAddress,
+                      type: type || "General", // Use provided type or default
+                      period,
+                      district,
+                      panchayat,
+                      razorpayPaymentId,
+                      razorpayOrderId,
+                      razorpaySignature,
+                    });
       }
 
      
@@ -196,26 +235,53 @@ export async function POST(req) {
         boxId,
       } = payment.notes || {};
 
-      const donation = new Donation({
-        amount,
-        type: type || "General",
-        razorpayPaymentId: paymentId,
-        razorpayOrderId: payment.order_id || null,
-        campaignId: campaignId || null,
-        instituteId:instituteId ||"null",
-        boxId:boxId || "null",
-        name: fullName || "null",
-        phone: phone || payment.contact || null,
-        email: emailAddress || payment.email || null,
-        district: district || null,
-        panchayat: panchayat || null,
-        message: message || null,
-        status: "Failed",
-        method: payment.method,
-        createdAt: new Date(payment.created_at * 1000),
-      });
+      if(type==="General" || "Yatheem" || "Hafiz" || "Bullding" || "Box"){
 
-      await donation.save();
+        const donation = new Donation({
+          amount,
+          type: type || "General",
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id || null,
+          campaignId: campaignId || null,
+          instituteId:instituteId ||"null",
+          boxId:boxId || "null",
+          name: fullName || "null",
+          phone: phone || payment.contact || null,
+          email: emailAddress || payment.email || null,
+          district: district || null,
+          panchayat: panchayat || null,
+          message: message || null,
+          status: "Failed",
+          method: payment.method,
+          createdAt: new Date(payment.created_at * 1000),
+        });
+        await donation.save();
+
+      }else if(type==="Sponsor-Hafiz" || "Sponsor-Yatheem"){
+        const sponsor = new Sponsor({
+          amount,
+          type: type || "null",
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id || null,
+          campaignId: campaignId || null,
+          instituteId:instituteId || "null",
+          boxId:boxId || "null",
+          name: fullName || "null",
+          phone: phone || payment.contact || null,
+          email: emailAddress || payment.email || null,
+          district: district || null,
+          panchayat: panchayat || null,
+          period:period || "null",
+          message: message || null,
+          status: "Failed",
+          method: payment.method,
+          createdAt: new Date(payment.created_at * 1000),
+        });
+  
+        await sponsor.save();
+      }
+
+
       console.log("One-time donation recorded:", donation);
 
       // Optional Twilio notification for one-time donation

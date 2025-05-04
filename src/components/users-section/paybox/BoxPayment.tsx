@@ -126,6 +126,11 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
       return;
     }
 
+    if (!boxData) {
+      setError("Box data not loaded");
+      return;
+    }
+
     try {
       startLoading();
       setIsLoading(true);
@@ -133,19 +138,28 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
       if (!scriptLoaded) throw new Error("Failed to load Razorpay SDK");
 
       // Create Razorpay order
+      console.log(boxData, "ffffffffffffffffffffff");
+
       const response = await fetch("/api/donations/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
-        body: JSON.stringify({ amount: customAmount * 100 }), // Convert to paise
+        body: JSON.stringify({
+          amount: customAmount * 100,
+          name: boxData.name,
+          phone: boxData.phone,
+          boxId: boxData._id,
+          type: "Box",
+          email: boxData.email,
+          district: boxData.district,
+          panchayat: boxData.panchayath,
+        }), // Convert to paise
       });
 
       const orderData = await response.json();
       if (!response.ok) throw new Error(orderData.error || "Order creation failed");
-
-      if (!boxData) throw new Error("Box data not loaded");
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_YourKeyIDHere",
@@ -154,6 +168,11 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
         name: "Donation Box Payment",
         description: `Payment for Box ${boxData.serialNumber}`,
         order_id: orderData.orderId,
+        prefill: {
+          name: boxData.name,
+          email: boxData.email,
+          contact: boxData.phone,
+        },
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_order_id: string;
@@ -174,18 +193,6 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
           };
           startLoading();
 
-          const saveResponse = await fetch("/api/donations/create", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-            },
-            body: JSON.stringify(paymentData),
-          });
-
-          const saveData = await saveResponse.json();
-          if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save payment");
-
           // Update box payment status
           const sresponse = await fetch(`/api/boxes/${box.id}/pay`, {
             method: "POST",
@@ -201,7 +208,7 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
 
           stopLoading();
           router.push(
-            `/paybox/success?donationId=${saveData.id}&amount=${customAmount}&name=${encodeURIComponent(
+            `/paybox/success?donationId=${"no id"}&amount=${customAmount}&name=${encodeURIComponent(
               boxData.name
             )}&phone=${paymentData.phone}&type=${"Box"}&district=${boxData.district || "Other"}&panchayat=${
               boxData.panchayath || ""
@@ -211,7 +218,7 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
           setPaymentStep("success");
           onPaymentComplete();
         },
-        prefill: { name: boxData.name, contact: boxData.mobileNumber },
+       
         theme: { color: "#10B981" },
       };
 
@@ -279,13 +286,13 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
             ))}
 
             {
-              box.status!=="dead" &&
-            <div className="p-4 rounded-xl">
-              <p className="text-indigo-800 font-medium text-sm">Payment Status</p>
-              <p className={`font-medium ${box.paymentStatus === "Paid" ? "text-green-600" : "text-red-600"}`}>
-                {box.paymentStatus} ({box.currentPeriod})
-              </p>
-            </div>
+              box.status !== "dead" &&
+              <div className="p-4 rounded-xl">
+                <p className="text-indigo-800 font-medium text-sm">Payment Status</p>
+                <p className={`font-medium ${box.paymentStatus === "Paid" ? "text-green-600" : "text-red-600"}`}>
+                  {box.paymentStatus} ({box.currentPeriod})
+                </p>
+              </div>
             }
 
             {/* Payment Input */}
