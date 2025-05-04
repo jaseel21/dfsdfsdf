@@ -1,6 +1,7 @@
 import connectDB from "../../../lib/db";
 import Donation from "../../../models/Donation";
 import Subscription from "../../../models/Subscription";
+import Sponsor from "@/models/Sponsor";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
@@ -93,50 +94,82 @@ export async function POST(req) {
 
       // Extract user data from notes
       const {
-        fullName,
-        phoneNumber,
-        donationType,
+        name,
+        phone,
+        type,
         district,
         panchayat,
         email,
         message,
         campaignId,
+        instituteId,
+        boxId,
+        period,
       } = payment.notes || {};
 
-      const donation = new Donation({
-        amount,
-        type: donationType || "General",
-        razorpayPaymentId: paymentId,
-        razorpayOrderId: payment.order_id || null,
-        campaignId: campaignId || null,
-        name: fullName || "null",
-        phone: phoneNumber || payment.contact || null,
-        email: email || payment.email || null,
-        district: district || null,
-        panchayat: panchayat || null,
-        message: message || null,
-        status: "Completed",
-        method: payment.method,
-        createdAt: new Date(payment.created_at * 1000),
-      });
+      if(type==="General" || "Yatheem" || "Hafiz" || "Bullding"){
+        const donation = new Donation({
+          amount,
+          type: type || "General",
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id || null,
+          campaignId: campaignId || null,
+          instituteId:instituteId || "null",
+          boxId:boxId || "null",
+          name: fullName || "null",
+          phone: phone || payment.contact || null,
+          email: emailAddress || payment.email || null,
+          district: district || null,
+          panchayat: panchayat || null,
+          message: message || null,
+          status: "Completed",
+          method: payment.method,
+          createdAt: new Date(payment.created_at * 1000),
+        });
+  
+        await donation.save();
+        console.log("One-time donation recorded:", donation);
+  
+        // Optional Twilio notification for one-time donation
+        if (phoneNumber) {
+          const toNumber = phoneNumber.startsWith("+")
+            ? `whatsapp:${phoneNumber}`
+            : `whatsapp:+91${phoneNumber}`;
+          try {
+            await twilioClient.messages.create({
+              body: `Thank you, ${fullName || "Donor"}, for your donation of ₹${amount}! Your support is greatly appreciated.`,
+              from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+              to: toNumber,
+            });
+          } catch (twilioError) {
+            console.error("Twilio error for one-time donation:", twilioError.message);
+          }
+      }else  if(type==="Sponsor-Hafiz" || "Sponsor-Yatheem"){
+        const Sponsor = new Sponsor({
+          amount,
+          type: type || "null",
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id || null,
+          campaignId: campaignId || null,
+          instituteId:instituteId || "null",
+          boxId:boxId || "null",
+          name: fullName || "null",
+          phone: phone || payment.contact || null,
+          email: emailAddress || payment.email || null,
+          district: district || null,
+          panchayat: panchayat || null,
+          period:period || "null",
+          message: message || null,
+          status: "Completed",
+          method: payment.method,
+          createdAt: new Date(payment.created_at * 1000),
+        });
+  
+        await Sponsor.save();
+        console.log("One-time donation recorded:", Sponsor);
+      }
 
-      await donation.save();
-      console.log("One-time donation recorded:", donation);
-
-      // Optional Twilio notification for one-time donation
-      if (phoneNumber) {
-        const toNumber = phoneNumber.startsWith("+")
-          ? `whatsapp:${phoneNumber}`
-          : `whatsapp:+91${phoneNumber}`;
-        try {
-          await twilioClient.messages.create({
-            body: `Thank you, ${fullName || "Donor"}, for your donation of ₹${amount}! Your support is greatly appreciated.`,
-            from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
-            to: toNumber,
-          });
-        } catch (twilioError) {
-          console.error("Twilio error for one-time donation:", twilioError.message);
-        }
+     
       }
     }else if(event.event === "payment.failed"){
       const payment = event.payload.payment.entity;
@@ -152,24 +185,28 @@ export async function POST(req) {
       // Extract user data from notes
       const {
         fullName,
-        phoneNumber,
-        donationType,
+        phone,
+        type,
         district,
         panchayat,
-        email,
+        emailAddress,
         message,
         campaignId,
+        instituteId,
+        boxId,
       } = payment.notes || {};
 
       const donation = new Donation({
         amount,
-        type: donationType || "General",
+        type: type || "General",
         razorpayPaymentId: paymentId,
         razorpayOrderId: payment.order_id || null,
         campaignId: campaignId || null,
+        instituteId:instituteId ||"null",
+        boxId:boxId || "null",
         name: fullName || "null",
-        phone: phoneNumber || payment.contact || null,
-        email: email || payment.email || null,
+        phone: phone || payment.contact || null,
+        email: emailAddress || payment.email || null,
         district: district || null,
         panchayat: panchayat || null,
         message: message || null,

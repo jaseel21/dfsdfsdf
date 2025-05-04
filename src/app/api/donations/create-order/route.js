@@ -11,16 +11,20 @@ export async function POST(req) {
     const {
       amount,
       campaignId,
-      donationType,
-      fullName,
-      phoneNumber,
+      type,
+      name,
+      phone,
       email,
       district,
       panchayat,
       message,
       boxId,
       instituteId,
+      period,
     } = await req.json();
+
+    console.log(email,name,phone,"eeeeeeeeeeeeeeeeemail");
+    
 
     // Validate amount (required in all cases)
     if (!amount || amount <= 0) {
@@ -28,7 +32,7 @@ export async function POST(req) {
     }
 
     // Validate donationType (required)
-    if (!donationType || typeof donationType !== "string") {
+    if (!type || typeof type !== "string") {
       return NextResponse.json({ error: "Invalid donation type" }, { status: 400 });
     }
 
@@ -45,25 +49,28 @@ export async function POST(req) {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
-    if (phoneNumber && !/^[0-9]{10}$/.test(phoneNumber)) {
+    if (phone && !/^[0-9]{10}$/.test(phone)) {
       return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
+
+
 
     const orderOptions = {
       amount, // Already in paise from frontend
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
       notes: {
-        donationType,
-        fullName: fullName || "Anonymous",
-        phoneNumber,
-        email,
+        type,
+        fullName: name || "Anonymous",
+        phone,
+        emailAddress:email,
         district,
         panchayat,
         message,
         boxId,
         instituteId,
         campaignId,
+        period:period || "null"
       },
     };
 

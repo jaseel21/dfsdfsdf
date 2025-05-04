@@ -69,9 +69,9 @@ export default function DonationForm({
         },
         body: JSON.stringify({
           amount: form.amount * 100,
-          donationType: form.donationType,
-          fullName: form.fullName,
-          phoneNumber: form.phoneNumber,
+          type: form.donationType,
+          name: form.fullName,
+          phone: form.phoneNumber,
           email: form.email,
           district: form.location.split(", ")[0]?.trim(),
           panchayat: form.location.split(", ")[1]?.trim(),
@@ -96,6 +96,11 @@ export default function DonationForm({
           name: "AIC Amal App",
           description: `Donation for ${form.donationType}`,
           order_id: orderData.orderId,
+          prefill: { 
+            name: form.fullName, 
+            email:form.email,
+            contact: form.phoneNumber 
+          },
           handler: async (response) => {
             try {
               const paymentData = {
@@ -125,7 +130,7 @@ export default function DonationForm({
               // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
 
               router.push(
-                `/donation/success?donationId=${saveData.id}&amount=${form.amount}&name=${encodeURIComponent(
+                `/donation/success?donationId=${form.phoneNumber}&amount=${form.amount}&name=${encodeURIComponent(
                   form.fullName
                 )}&phone=${form.phoneNumber}&type=${form.donationType}&district=${district || "Other"}&panchayat=${panchayath || ""
                 }&paymentId=${response.razorpay_payment_id}&orderId=${response.razorpay_order_id}`
@@ -135,7 +140,7 @@ export default function DonationForm({
                 await onSubmit(form);
               }
               resolve({
-                id: saveData.id,
+                // id: saveData.id,
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
               });
@@ -145,7 +150,7 @@ export default function DonationForm({
               stopLoading();
             }
           },
-          prefill: { name: form.fullName, contact: form.phoneNumber },
+          // prefill: { name: form.fullName, contact: form.phoneNumber },
           theme: { color: "#10B981" },
         };
 

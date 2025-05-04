@@ -102,6 +102,8 @@ export const SponsorshipForm = ({
     try {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) throw new Error("Failed to load Razorpay SDK");
+      const [district, panchayath] = form.location.split(", ").map((part) => part.trim());
+
 
       const response = await fetch("/api/donations/create-order", {
         method: "POST",
@@ -109,13 +111,22 @@ export const SponsorshipForm = ({
           "Content-Type": "application/json",
           "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
-        body: JSON.stringify({ amount: form.amount * 100 }),
+        body: JSON.stringify({
+          amount: form.amount,
+          name: form.fullName,
+          phone: form.phoneNumber,
+          type: form.type === "Yatheem" ? "Sponsor-Yatheem" : "Sponsor-Hafiz",
+          program: activeProgram,
+          period: form.period + (activeOption.includesEducation ? "(with education)" : ""),
+          district: district,
+          email: form.email,
+          panchayat: panchayath,
+        }),
       });
 
       const orderData: { orderId: string; error?: string } = await response.json();
       if (!response.ok) throw new Error(orderData.error || "Order creation failed");
 
-      const [district, panchayath] = form.location.split(", ").map((part) => part.trim());
 
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
@@ -144,20 +155,20 @@ export const SponsorshipForm = ({
               };
 
               startLoading();
-              const saveResponse = await fetch("/api/sponsorships/create", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-                },
-                body: JSON.stringify(paymentData),
-              });
+              // const saveResponse = await fetch("/api/sponsorships/create", {
+              //   method: "POST",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //     "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+              //   },
+              //   body: JSON.stringify(paymentData),
+              // });
 
-              const saveData: { id: string; error?: string } = await saveResponse.json();
-              if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
+              // const saveData: { id: string; error?: string } = await saveResponse.json();
+              // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
 
               router.push(
-                `/sponsorship/success?donationId=${saveData.id}&amount=${form.amount}&name=${encodeURIComponent(
+                `/sponsorship/success?donationId=${"no id"}&amount=${form.amount}&name=${encodeURIComponent(
                   form.fullName
                 )}&phone=${form.phoneNumber}&type=${paymentData.type}&district=${
                   district || "Other"
@@ -170,7 +181,6 @@ export const SponsorshipForm = ({
 
               if (onSubmit) await onSubmit(form);
               resolve({
-                id: saveData.id,
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
               });
