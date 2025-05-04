@@ -173,7 +173,7 @@ export async function POST(req) {
          let donor = await Donor.findOne({ phone });
             if (!donor) {
               console.log("Creating new donor...");
-              donor = await Donor.create({ name, phone,email, period });
+              donor = await Donor.create({ name:fullName, phone,email:emailAddress, period });
             } else {
               console.log("Donor already exists:", donor);
               return NextResponse.json({ exist: true });
