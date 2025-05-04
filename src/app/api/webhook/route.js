@@ -94,12 +94,12 @@ export async function POST(req) {
 
       // Extract user data from notes
       const {
-        name,
+        fullName,
         phone,
         type,
         district,
         panchayat,
-        email,
+        emailAddress,
         message,
         campaignId,
         instituteId,
@@ -145,7 +145,7 @@ export async function POST(req) {
             console.error("Twilio error for one-time donation:", twilioError.message);
           }
       }else  if(type==="Sponsor-Hafiz" || "Sponsor-Yatheem"){
-        const Sponsor = new Sponsor({
+        const sponsor = new Sponsor({
           amount,
           type: type || "null",
           razorpayPaymentId: paymentId,
@@ -165,7 +165,7 @@ export async function POST(req) {
           createdAt: new Date(payment.created_at * 1000),
         });
   
-        await Sponsor.save();
+        await sponsor.save();
         console.log("One-time donation recorded:", Sponsor);
       }
 
