@@ -4,6 +4,7 @@ import Subscription from "../../../models/Subscription";
 import Sponsor from "@/models/Sponsor";
 import { NextResponse } from "next/server";
 import  Donor from "@/models/Donor"
+import Sdonation from "@/models/Sdonation";
 import crypto from "crypto";
 
 const verifySignature = (body, signature, secret) => {
@@ -206,6 +207,9 @@ export async function POST(req) {
                       razorpayOrderId,
                       razorpaySignature,
                     });
+
+                    console.log("Donation Created:", newDonation);
+
       }
 
      
