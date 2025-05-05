@@ -195,6 +195,8 @@ export async function POST(req) {
         console.log("One-time donation recorded:", Sponsor);
       }else if(type==="Subscription"){
          let donor = await Donor.findOne({ phone });
+         console.log("webhook exicuted");
+         
             if (!donor) {
               console.log("Creating new donor...");
               donor = await Donor.create({ name:fullName, phone,email:emailAddress, period });
