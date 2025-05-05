@@ -1,7 +1,5 @@
 import connectDB from "../../../lib/db";
-import Donation from "../../../models/Donation";
 import Subscription from "../../../models/Subscription";
-import Sponsor from "@/models/Sponsor";
 import Donor from "@/models/Donor";
 import Sdonation from "@/models/Sdonation";
 import { NextResponse } from "next/server";
@@ -38,7 +36,7 @@ export async function POST(req) {
       if (type === "Subscription") {
         console.log("Processing Subscription payment:", paymentId);
 
-        const existingSdonation = await januari findOne({ razorpayPaymentId: paymentId });
+        const existingSdonation = await Sdonation.findOne({ razorpayPaymentId: paymentId });
         if (existingSdonation) {
           console.log("Duplicate Sdonation found:", paymentId);
           return NextResponse.json({ received: true });
