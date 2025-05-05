@@ -97,41 +97,17 @@ export async function POST(req) {
       // Extract user data from notes
       const {
         fullName,
-        phone: rawPhone = payment.contact || null,
+        phone,
         type,
-        district = null,
-        panchayat = null,
-        emailAddress = payment.email || null,
-        message = null,
-        campaignId = null,
-        instituteId = null,
-        boxId = null,
-        period = null,
+        district,
+        panchayat,
+        emailAddress,
+        message,
+        campaignId,
+        instituteId,
+        boxId,
+        period,
       } = payment.notes || {};
-    
-      let phone = rawPhone;
-    
-      if (phone) {
-        // If phone already has a country code, use it as-is for Twilio
-        if (phone.startsWith("+")) {
-          // Strip country code for storage (assuming +91 for India)
-          if (phone.startsWith("+91") && phone.length === 13) {
-            phone = phone.slice(3); // e.g., +919876543210 -> 9876543210
-          }
-        } else {
-          // Assume 10-digit Indian number and prepend +91 for Twilio
-          if (/^[0-9]{10}$/.test(phone)) {
-          } else {
-            console.warn("Invalid phone number format:", phone);
-            phone = null; // Fallback for invalid numbers
-          }
-        }
-      } else {
-        console.warn("No phone number provided in payment.notes or payment.contact");
-        phone = null;
-       
-      }
-    
 
       if(type==="General" || "Yatheem" || "Hafiz" || "Bullding" || "Box"){
         const donation = new Donation({
@@ -194,47 +170,75 @@ export async function POST(req) {
         await sponsor.save();
         console.log("One-time donation recorded:", Sponsor);
       }else if(type==="Subscription"){
-         let donor = await Donor.findOne({ phone });
-         console.log("webhook exicuted");
-         
-            if (!donor) {
-              console.log("Creating new donor...");
-              donor = await Donor.create({ name:fullName, phone,email:emailAddress, period });
-            } else {
-              console.log("Donor already exists:", donor);
-              return NextResponse.json({ exist: true });
-            }
-
-            const subscription = await Subscription.create({
-                  donorId: donor._id,
-                  name:fullName,
-                  phone,
-                  amount,
-                  period,
-                  email:emailAddress,
-                  district,
-                  panchayat,
-                  method:"manual",
-                  status:"active"
-                });
-
-                const newDonation = await Sdonation.create({
-                      donorId: donor._id,
-                      subscriptionId: subscription._id,
-                      phone,
-                      name:fullName,
-                      amount,
-                      email:emailAddress,
-                      type: type || "General", // Use provided type or default
-                      period,
-                      district,
-                      panchayat,
-                      razorpayPaymentId,
-                      razorpayOrderId,
-                      razorpaySignature,
-                    });
-
-                    console.log("Donation Created:", newDonation);
+        const existingSdonation = await Sdonation.findOne({ razorpayPaymentId: paymentId });
+        if (existingSdonation) {
+          console.log("Duplicate Sdonation found:", paymentId);
+          return NextResponse.json({ received: true });
+        }
+      
+        // Create or find Donor
+        let donor = await Donor.findOne({ phone });
+        if (!donor) {
+          console.log("Creating new donor for subscription...");
+          donor = await Donor.create({
+            name: fullName || "Anonymous",
+            phone,
+            email: emailAddress,
+            period,
+          });
+        } else {
+          console.log("Donor already exists:", donor);
+        }
+      
+        // Create Subscription
+        const subscription = await Subscription.create({
+          donorId: donor._id,
+          name: fullName || "Anonymous",
+          phone,
+          amount,
+          period,
+          email: emailAddress,
+          district,
+          panchayat,
+          method: "manual",
+          status: "active",
+          lastPaymentAt: new Date(payment.created_at * 1000), // Set explicitly
+          type: type || "General",
+        });
+        console.log("Subscription created:", subscription);
+      
+        // Create Sdonation
+        const newDonation = await Sdonation.create({
+          donorId: donor._id,
+          subscriptionId: subscription._id,
+          phone,
+          name: fullName || "Anonymous",
+          amount,
+          email: emailAddress,
+          type: type || "General",
+          period,
+          district,
+          panchayat,
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id,
+          paymentStatus: "paid",
+          paymentDate: new Date(payment.created_at * 1000),
+        });
+        console.log("Sdonation created:", newDonation);
+      
+        // Twilio notification for Subscription
+        if (phone) {
+          const toNumber = phone.startsWith("+") ? `whatsapp:${phone}` : `whatsapp:+91${phone}`;
+          try {
+            await twilioClient.messages.create({
+              body: `Thank you, ${fullName || "Donor"}, for your subscription donation of ₹${amount}! Your ${period} subscription is now active.`,
+              from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+              to: toNumber,
+            });
+          } catch (twilioError) {
+            console.error("Twilio error for subscription donation:", twilioError.message);
+          }
+        }
 
       }
 
