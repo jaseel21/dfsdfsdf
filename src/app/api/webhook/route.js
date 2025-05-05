@@ -97,17 +97,41 @@ export async function POST(req) {
       // Extract user data from notes
       const {
         fullName,
-        phone,
+        phone: rawPhone = payment.contact || null,
         type,
-        district,
-        panchayat,
-        emailAddress,
-        message,
-        campaignId,
-        instituteId,
-        boxId,
-        period,
+        district = null,
+        panchayat = null,
+        emailAddress = payment.email || null,
+        message = null,
+        campaignId = null,
+        instituteId = null,
+        boxId = null,
+        period = null,
       } = payment.notes || {};
+    
+      let phone = rawPhone;
+    
+      if (phone) {
+        // If phone already has a country code, use it as-is for Twilio
+        if (phone.startsWith("+")) {
+          // Strip country code for storage (assuming +91 for India)
+          if (phone.startsWith("+91") && phone.length === 13) {
+            phone = phone.slice(3); // e.g., +919876543210 -> 9876543210
+          }
+        } else {
+          // Assume 10-digit Indian number and prepend +91 for Twilio
+          if (/^[0-9]{10}$/.test(phone)) {
+          } else {
+            console.warn("Invalid phone number format:", phone);
+            phone = null; // Fallback for invalid numbers
+          }
+        }
+      } else {
+        console.warn("No phone number provided in payment.notes or payment.contact");
+        phone = null;
+       
+      }
+    
 
       if(type==="General" || "Yatheem" || "Hafiz" || "Bullding" || "Box"){
         const donation = new Donation({
