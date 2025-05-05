@@ -190,28 +190,29 @@ export async function POST(req) {
             console.error("Twilio error for one-time donation:", twilioError.message);
           }
         }
-      } else if (["Sponsor-Hafiz", "Sponsor-Yatheem"].includes(type)) {
+      } else  if(type==="Sponsor-Hafiz" || "Sponsor-Yatheem"){
         const sponsor = new Sponsor({
           amount,
           type: type || "null",
           razorpayPaymentId: paymentId,
           razorpayOrderId: payment.order_id || null,
           campaignId: campaignId || null,
-          instituteId: instituteId || "null",
-          boxId: boxId || "null",
+          instituteId:instituteId || "null",
+          boxId:boxId || "null",
           name: fullName || "null",
-          phone: standardizedPhone || null,
+          phone: phone || payment.contact || null,
           email: emailAddress || payment.email || null,
           district: district || null,
           panchayat: panchayat || null,
-          period: period || "null",
+          period:period || "null",
           message: message || null,
           status: "Completed",
           method: payment.method,
           createdAt: new Date(payment.created_at * 1000),
         });
-
+  
         await sponsor.save();
+
         console.log("Sponsor donation recorded:", sponsor);
       } else if (type === "Subscription") {
         const existingSdonation = await Sdonation.findOne({ razorpayPaymentId: paymentId });
