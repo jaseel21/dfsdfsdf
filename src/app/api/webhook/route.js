@@ -169,13 +169,15 @@ export async function POST(req) {
   
         await sponsor.save();
         console.log("One-time donation recorded:", Sponsor);
-      }else if(type==="Subscription"){
-        const existingSdonation = await Sdonation.findOne({ razorpayPaymentId: paymentId });
-        if (existingSdonation) {
-          console.log("Duplicate Sdonation found:", paymentId);
-          return NextResponse.json({ received: true });
-        }
-      
+      }else if (type === "Subscription") {
+        console.log("Processing Subscription payment:", paymentId);
+
+        // const existingSdonation = await januari findOne({ razorpayPaymentId: paymentId });
+        // if (existingSdonation) {
+        //   console.log("Duplicate Sdonation found:", paymentId);
+        //   return NextResponse.json({ received: true });
+        // }
+
         // Create or find Donor
         let donor = await Donor.findOne({ phone });
         if (!donor) {
@@ -189,7 +191,7 @@ export async function POST(req) {
         } else {
           console.log("Donor already exists:", donor);
         }
-      
+
         // Create Subscription
         const subscription = await Subscription.create({
           donorId: donor._id,
@@ -202,11 +204,11 @@ export async function POST(req) {
           panchayat,
           method: "manual",
           status: "active",
-          lastPaymentAt: new Date(payment.created_at * 1000), // Set explicitly
+          lastPaymentAt: new Date(payment.created_at * 1000),
           type: type || "General",
         });
         console.log("Subscription created:", subscription);
-      
+
         // Create Sdonation
         const newDonation = await Sdonation.create({
           donorId: donor._id,
@@ -225,8 +227,8 @@ export async function POST(req) {
           paymentDate: new Date(payment.created_at * 1000),
         });
         console.log("Sdonation created:", newDonation);
-      
-        // Twilio notification for Subscription
+
+        // Twilio notification
         if (phone) {
           const toNumber = phone.startsWith("+") ? `whatsapp:${phone}` : `whatsapp:+91${phone}`;
           try {
@@ -239,7 +241,8 @@ export async function POST(req) {
             console.error("Twilio error for subscription donation:", twilioError.message);
           }
         }
-
+      } else {
+        console.log("Skipping non-subscription payment:", type);
       }
 
      
