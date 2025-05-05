@@ -13,7 +13,7 @@ const SponsorSchema = new mongoose.Schema({
   status:{type:String,required:true,default:"Completed"},
   razorpayPaymentId: { type: String, required: true },
   razorpayOrderId: { type: String, required: true },
-  razorpaySignature: { type: String, required: true },
+  razorpaySignature: { type: String,  },
   createdAt: { type: Date, default: Date.now },
 }, { 
   collection: "donations" // Explicitly set the collection name
