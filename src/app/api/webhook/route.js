@@ -140,6 +140,8 @@ export async function POST(req) {
         instituteId,
         boxId,
         period,
+        razorpaySubscriptionId,
+        planId,
       } = payment.notes || {};
 
       console.log("Payment notes:", payment.notes);
@@ -282,6 +284,63 @@ export async function POST(req) {
             console.error("Twilio error for subscription donation:", twilioError.message);
           }
         }
+      }else if(type==="Subscription-auto"){
+        console.log("Processing Subscription-auto payment:", paymentId);
+
+        // Prepare payload for /api/update-subscription-status
+        const subscriptionData = {
+          razorpaySubscriptionId: razorpaySubscriptionId || "",
+          name: fullName || "Anonymous",
+          amount,
+          phoneNumber: standardizedPhone,
+          district: district || "",
+          type: "General",
+          method: "auto",
+          planId: planId || "",
+          email: emailAddress || payment.email || "",
+          panchayat: panchayat || "",
+          period: period || "",
+          razorpayOrderId: payment.order_id || "",
+          razorpay_payment_id: paymentId,
+          status: "active",
+        };
+
+        console.log("Sending subscription data to /api/update-subscription-status:", subscriptionData);
+
+        // Make API call to /api/update-subscription-status
+        try {
+          const apiResponse = await fetch(`/api/update-subscription-status`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+            },
+            body: JSON.stringify(subscriptionData),
+          });
+
+          const apiData = await apiResponse.json();
+          if (!apiResponse.ok) {
+            console.error("Failed to update subscription status:", apiData.error || "Unknown error");
+          } else {
+            console.log("Subscription status updated successfully:", apiData);
+          }
+        } catch (apiError) {
+          console.error("Error calling /api/update-subscription-status:", apiError.message);
+        }
+
+        // Optional Twilio notification for Subscription-auto
+        if (standardizedPhone) {
+          const toNumber = standardizedPhone.startsWith("+") ? `whatsapp:${standardizedPhone}` : `whatsapp:+91${standardizedPhone}`;
+          try {
+            await twilioClient.messages.create({
+              body: `Thank you, ${fullName || "Donor"}, for your auto subscription donation of ₹${amount}! Your ${period} subscription is now active.`,
+              from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+              to: toNumber,
+            });
+          } catch (twilioError) {
+            console.error("Twilio error for Subscription-auto donation:", twilioError.message);
+          }
+        }
       }
     }
 
@@ -309,6 +368,8 @@ export async function POST(req) {
         campaignId,
         instituteId,
         boxId,
+        razorpaySubscriptionId,
+        planId,
         period,
       } = payment.notes || {};
 

@@ -20,6 +20,8 @@ export async function POST(req) {
       message,
       boxId,
       instituteId,
+      razorpaySubscriptionId,
+      planId,
       period,
     } = await req.json();
 
@@ -70,6 +72,8 @@ export async function POST(req) {
         boxId,
         instituteId,
         campaignId,
+        razorpaySubscriptionId,
+        planId,
         period:period || "null"
       },
     };

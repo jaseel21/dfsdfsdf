@@ -299,83 +299,88 @@ export default function SubscriptionPage() {
         alert("Failed to load Razorpay SDK. Please try again.");
         return;
       }
-
+  
       const planId = await createPlan(customPlan, formData);
       if (!planId) throw new Error("Plan ID not received");
-
+  
+      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
+  
+      // Create Razorpay order with all subscription data in notes
       const { data } = await axios.post(
-        "/api/create-subscription",
-        { planId, name: formData.fullName, amount: formData.amount, phone: phoneNumber, period: formData.period },
+        "/api/donations/create-order",
+        {
+          amount: formData.amount * 100, // Convert to paise
+          name: formData.fullName,
+          phone: phoneNumber,
+          email: formData.email,
+          district,
+          panchayat: panchayat || null,
+          period: formData.period,
+          type: "Subscription-auto",
+          method: "auto",
+          razorpaySubscriptionId: customPlan.subscriptionId || formData.subscriptionId || "", // Use subscriptionId from customPlan or formData
+          planId: planId,
+          status: "active",
+        },
         {
           headers: {
-            'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
           },
         }
       );
+  
       if (data.error) throw new Error(data.details || data.error);
-      const subscriptionId = data.subscriptionId;
-      if (!subscriptionId) throw new Error("Subscription ID not received");
-
-      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
-
+      const orderId = data.orderId;
+      if (!orderId) throw new Error("Order ID not received");
+  
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
-        subscription_id: subscriptionId,
+        order_id: orderId,
         name: "Donation App",
-        description: `Donation Subscription for ${customPlan.period} plan`,
-        amount: formData.amount * 100,
+        description: `Donation Subscription for ${formData.period} plan`,
+        amount: formData.amount * 100, // In paise
         currency: "INR",
         handler: async (response) => {
-          const { data } = await axios.post(
-            "/api/update-subscription-status",
-            {
-              razorpaySubscriptionId: subscriptionId,
-              name: formData.fullName,
-              amount: formData.amount,
-              phoneNumber,
-              district,
-              type: "General",
-              method: "auto",
-              planId,
-              email: formData.email,
-              panchayat,
-              period: formData.period,
-              razorpayOrderId: response.razorpay_order_id || "",
-              razorpay_payment_id: response.razorpay_payment_id,
-              status: "active",
-            },
-            {
-              headers: {
-                'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-              },
-            }
-          );
-
+          // Webhook will handle Donor, Subscription, and Sdonation creation
           stopLoading();
-
           router.push(
-            `/subscription/success?donationId=${data._id}&amount=${formData.amount}&method=${"auto"}&name=${encodeURIComponent(
+            `/subscription/success?donationId=${response.razorpay_payment_id}&amount=${formData.amount}&method=auto&name=${encodeURIComponent(
               formData.fullName
             )}&phone=${phoneNumber}&type=General&district=${district || "Other"}&panchayat=${
               panchayat || ""
-            }&paymentId=${response.razorpay_payment_id}&orderId=${response.razorpay_order_id || ""}&method=${"auto" || ""}`
+            }&paymentId=${response.razorpay_payment_id}&orderId=${response.razorpay_order_id}&method=auto`
           );
         },
-        prefill: { contact: phoneNumber, name: formData.fullName },
+        prefill: { contact: phoneNumber, name: formData.fullName, email: formData.email },
+        notes: {
+          fullName: formData.fullName,
+          phone: phoneNumber,
+          emailAddress: formData.email,
+          district,
+          panchayat: panchayat || null,
+          period: formData.period,
+          type: "Subscription",
+          method: "auto",
+          razorpaySubscriptionId: customPlan.subscriptionId || formData.subscriptionId || "",
+          planId: planId,
+          status: "active",
+        },
         theme: { color: "#F37254" },
       };
-
+  
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
         console.error("Payment failed:", response.error);
         alert(`Payment failed: ${response.error.description}`);
+        stopLoading();
       });
       rzp.open();
       setIsLoading(false);
-      stopLoading();
     } catch (error) {
       console.error("Error in handlePayment:", error);
       alert(`An error occurred: ${error.message || "Unknown error"}`);
+      setIsLoading(false);
+      stopLoading();
     }
   };
 
