@@ -368,8 +368,6 @@ export async function POST(req) {
         campaignId,
         instituteId,
         boxId,
-        razorpaySubscriptionId,
-        planId,
         period,
       } = payment.notes || {};
 
