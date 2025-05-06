@@ -12,33 +12,40 @@ const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_A
 export async function POST(req) {
   try {
     await connectDB();
-    const { planId,period ,phone,amount} = await req.json();
+    const { planId,period ,phone,amount,name,district,panchayat,email} = await req.json();
 
 
     if ( !planId) {
       return NextResponse.json({ error: "Missing userId or planId" }, { status: 400 });
     }
 
-    // const subscription = await Subscription.findOne({ planId });
-    // if (!subscription) {
-    //   return NextResponse.json({ error: "Plan not found" }, { status: 404 });
-    // }
-
+   
     const totalCount = { weekly: 52, monthly: 12, yearly: 1 }[period] || 12;
     const razorpaySubscription = await razorpay.subscriptions.create({
       plan_id: planId,
       customer_notify: 1,
       total_count: totalCount,
+      notes: {
+        razorpaySubscriptionId: "", // Will be updated after creation
+        name: name || "Anonymous",
+        amount: (amount / 100).toString(), // Convert to rupees and store as string
+        phoneNumber: phone,
+        district: district || "",
+        type: "Subscription-auto" || "General",
+        method: "auto",
+        planId,
+        email: email || "",
+        panchayat: panchayat || "",
+        period,
+      },
     });
 
-    // subscription.razorpaySubscriptionId = razorpaySubscription.id;
-    // subscription.status = "created";
-    // subscription.subscriptionId=subscription._id;
-    // await subscription.save();
 
+
+
+    
     const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-    // const toNumber = subscription.phoneNumber.startsWith("+")
-      // ? `whatsapp:${subscription.phoneNumber}`
+    
       const toNumber =  `whatsapp:+91${phone}`;
     try {
       await twilioClient.messages.create({

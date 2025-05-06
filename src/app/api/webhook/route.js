@@ -288,24 +288,29 @@ export async function POST(req) {
         console.log("Processing Subscription-auto payment:", paymentId);
 
         // Prepare payload for /api/update-subscription-status
-        const subscriptionData = {
-          razorpaySubscriptionId: razorpaySubscriptionId || "",
-          name: fullName || "Anonymous",
-          amount,
-          phoneNumber: standardizedPhone,
-          district: district || "",
-          type: "General",
-          method: "auto",
-          planId: planId || "",
-          email: emailAddress || payment.email || "",
-          panchayat: panchayat || "",
-          period: period || "",
-          razorpayOrderId: payment.order_id || "",
-          razorpay_payment_id: paymentId,
-          status: "active",
-        };
-
-        console.log("Sending subscription data to /api/update-subscription-status:", subscriptionData);
+        const razorpaySubscription = await razorpay.subscriptions.create({
+          plan_id: planId,
+          customer_notify: 1,
+          total_count: totalCount,
+        });
+    
+        // Update the subscription notes with razorpaySubscriptionId and other fields
+        await razorpay.subscriptions.update(razorpaySubscription.id, {
+          notes: {
+            razorpaySubscriptionId: razorpaySubscription.id, // Subscription ID added here
+            name: fullName || "Anonymous",
+            amount: (amount / 100).toString(), // Convert to rupees and store as string
+            phoneNumber: phone,
+            district: district || "",
+            type: "Subscription-auto",
+            method: "auto",
+            planId,
+            email: email || "",
+            panchayat: panchayat || "",
+            period,
+          },
+        });
+      
 
         // Make API call to /api/update-subscription-status
         try {
