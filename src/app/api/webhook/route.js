@@ -309,7 +309,7 @@ export async function POST(req) {
 
         // Make API call to /api/update-subscription-status
         try {
-          const apiResponse = await fetch(`/api/update-subscription-status`, {
+          const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
