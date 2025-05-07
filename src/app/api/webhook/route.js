@@ -64,9 +64,8 @@ export async function POST(req) {
         period,
         district,
         panchayat,
-        email,
+        emailAddress,
         type,
-        method,
         planId,
       } = notes;
 
