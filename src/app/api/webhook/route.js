@@ -140,7 +140,6 @@ export async function POST(req) {
         instituteId,
         boxId,
         period,
-        planId,
       } = payment.notes || {};
 
       console.log("Payment notes:", payment.notes);

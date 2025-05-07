@@ -25,13 +25,17 @@ export async function POST(req) {
       plan_id: planId,
       customer_notify: 1,
       total_count: totalCount,
+    });
+
+    // Update the subscription notes with razorpaySubscriptionId and other fields
+    await razorpay.subscriptions.update(razorpaySubscription.id, {
       notes: {
-        razorpaySubscriptionId: "", // Will be updated after creation
+        razorpaySubscriptionId: razorpaySubscription.id, // Subscription ID added here
         name: name || "Anonymous",
         amount: (amount / 100).toString(), // Convert to rupees and store as string
         phoneNumber: phone,
         district: district || "",
-        type: "Subscription-auto" || "General",
+        type: "Subscription-auto",
         method: "auto",
         planId,
         email: email || "",
@@ -39,9 +43,6 @@ export async function POST(req) {
         period,
       },
     });
-
-
-
 
     
     const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
