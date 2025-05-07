@@ -319,8 +319,8 @@ export default function SubscriptionPage() {
             phone: phoneNumber,
              period: formData.period,
              name:formData.fullName,
-             district:formData.district,
-             panchayat:formData.panchayat,
+             district:district,
+             panchayat:panchayat,
              email:formData.email,
              },
         {

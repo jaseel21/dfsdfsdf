@@ -49,6 +49,89 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
+
+    if (event.event === "subscription.activated") {
+      const subscriptionData = event.payload.subscription.entity;
+      const subscriptionId = subscriptionData.id;
+      const notes = subscriptionData.notes || {};
+
+
+
+      const {
+        name,
+        phoneNumber,
+        amount,
+        period,
+        district,
+        panchayat,
+        email,
+        type,
+        method,
+        planId,
+      } = notes;
+
+      const subscriptionDetails = {
+        razorpaySubscriptionId:subscriptionId,
+        name: fullName || "Anonymous",
+        amount,
+        phoneNumber: standardizedPhone,
+        district: district || "",
+        type: type || "General",
+        method: "auto",
+        planId,
+        email: emailAddress || payment.email || "",
+        panchayat: panchayat || "",
+        period,
+        razorpayOrderId: payment.order_id || "",
+        razorpay_payment_id: paymentId,
+        status: "active",
+      };
+
+      try {
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+          body: JSON.stringify(subscriptionDetails),
+        });
+
+        const apiData = await apiResponse.json();
+        if (!apiResponse.ok) {
+          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
+        } else {
+          console.log("Subscription status updated successfully:", apiData);
+        }
+      } catch (apiError) {
+        console.error("Error calling /api/update-subscription-status:", apiError.message);
+      }
+
+
+      // Standardize phone number
+      const standardizedPhone = standardizePhoneNumber(phoneNumber);
+      if (!standardizedPhone) {
+        console.error("Invalid phone number for subscription.activated:", phoneNumber);
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+      }
+
+      // Send Twilio notification
+      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+      const toNumber = `whatsapp:${standardizedPhone}`;
+      try {
+        await twilioClient.messages.create({
+          body: `Your ${period} donation subscription is now active! Amount: ₹${amount}. Thank you for your support, ${name || "Donor"}!`,
+          from: fromNumber,
+          to: toNumber,
+        });
+        console.log("Twilio notification sent for subscription.activated");
+      } catch (twilioError) {
+        console.error("Twilio error for subscription.activated:", twilioError.message);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     // Handle subscription.charged event
     if (event.event === "subscription.charged") {
       const subscriptionId = event.payload.subscription.entity.id;
