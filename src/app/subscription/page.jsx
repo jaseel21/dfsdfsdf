@@ -308,6 +308,7 @@ export default function SubscriptionPage() {
         alert("Failed to load Razorpay SDK. Please try again.");
         return;
       }
+      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
 
       const planId = await createPlan(customPlan, formData);
       if (!planId) throw new Error("Plan ID not received");
@@ -317,8 +318,8 @@ export default function SubscriptionPage() {
         { planId, name: formData.fullName,
            amount: formData.amount,
             phone: phoneNumber,
-             period: formData.period,
-             name:formData.fullName,
+            period: formData.period,
+            name:formData.fullName,
              district:district,
              panchayat:panchayat,
              email:formData.email,
@@ -333,7 +334,7 @@ export default function SubscriptionPage() {
       const subscriptionId = data.subscriptionId;
       if (!subscriptionId) throw new Error("Subscription ID not received");
 
-      const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
+  
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
@@ -343,35 +344,35 @@ export default function SubscriptionPage() {
         amount: formData.amount * 100,
         currency: "INR",
         handler: async (response) => {
-          const { data } = await axios.post(
-            "/api/update-subscription-status",
-            {
-              razorpaySubscriptionId: subscriptionId,
-              name: formData.fullName,
-              amount: formData.amount,
-              phoneNumber,
-              district,
-              type: "General",
-              method: "auto",
-              planId,
-              email: formData.email,
-              panchayat,
-              period: formData.period,
-              razorpayOrderId: response.razorpay_order_id || "",
-              razorpay_payment_id: response.razorpay_payment_id,
-              status: "active",
-            },
-            {
-              headers: {
-                'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-              },
-            }
-          );
+          // const { data } = await axios.post(
+          //   // "/api/update-subscription-status",
+          //   // {
+          //   //   razorpaySubscriptionId: subscriptionId,
+          //   //   name: formData.fullName,
+          //   //   amount: formData.amount,
+          //   //   phoneNumber,
+          //   //   district,
+          //   //   type: "General",
+          //   //   method: "auto",
+          //   //   planId,
+          //   //   email: formData.email,
+          //   //   panchayat,
+          //   //   period: formData.period,
+          //   //   razorpayOrderId: response.razorpay_order_id || "",
+          //   //   razorpay_payment_id: response.razorpay_payment_id,
+          //   //   status: "active",
+          //   // },
+          //   // {
+          //   //   headers: {
+          //   //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          //   //   },
+          //   // }
+          // );
 
           stopLoading();
 
           router.push(
-            `/subscription/success?donationId=${data._id}&amount=${formData.amount}&method=${"auto"}&name=${encodeURIComponent(
+            `/subscription/success?donationId=${"no id"}&amount=${formData.amount}&method=${"auto"}&name=${encodeURIComponent(
               formData.fullName
             )}&phone=${phoneNumber}&type=General&district=${district || "Other"}&panchayat=${
               panchayat || ""

@@ -54,12 +54,20 @@ export async function POST(req) {
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
-
-
-
+      const startAt = subscriptionData.start_at;
+    
+      // Safely extract or set defaults
+      const fullName = notes.name || "Anonymous";
+      const standardizedPhone = notes.phoneNumber || "";
+      const payment = subscriptionData.latest_invoice?.payment || {};
+      const paymentId = payment.id || "";
+    
+      // Convert Unix timestamp to ISO string if available
+      const subscriptionStartDate = startAt
+        ? new Date(startAt * 1000).toISOString()
+        : null;
+    
       const {
-        name,
-        phoneNumber,
         amount,
         period,
         district,
@@ -68,10 +76,10 @@ export async function POST(req) {
         type,
         planId,
       } = notes;
-
+    
       const subscriptionDetails = {
-        razorpaySubscriptionId:subscriptionId,
-        name: fullName || "Anonymous",
+        razorpaySubscriptionId: subscriptionId,
+        name: fullName,
         amount,
         phoneNumber: standardizedPhone,
         district: district || "",
@@ -83,9 +91,10 @@ export async function POST(req) {
         period,
         razorpayOrderId: payment.order_id || "",
         razorpay_payment_id: paymentId,
+        subscriptionStartDate, // added the new field here
         status: "active",
       };
-
+    
       try {
         const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
           method: "POST",
@@ -95,7 +104,7 @@ export async function POST(req) {
           },
           body: JSON.stringify(subscriptionDetails),
         });
-
+    
         const apiData = await apiResponse.json();
         if (!apiResponse.ok) {
           console.error("Failed to update subscription status:", apiData.error || "Unknown error");
@@ -105,31 +114,8 @@ export async function POST(req) {
       } catch (apiError) {
         console.error("Error calling /api/update-subscription-status:", apiError.message);
       }
-
-
-      // Standardize phone number
-      const standardizedPhone = standardizePhoneNumber(phoneNumber);
-      if (!standardizedPhone) {
-        console.error("Invalid phone number for subscription.activated:", phoneNumber);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
-      }
-
-      // Send Twilio notification
-      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-      const toNumber = `whatsapp:${standardizedPhone}`;
-      try {
-        await twilioClient.messages.create({
-          body: `Your ${period} donation subscription is now active! Amount: ₹${amount}. Thank you for your support, ${name || "Donor"}!`,
-          from: fromNumber,
-          to: toNumber,
-        });
-        console.log("Twilio notification sent for subscription.activated");
-      } catch (twilioError) {
-        console.error("Twilio error for subscription.activated:", twilioError.message);
-      }
-
-      return NextResponse.json({ received: true });
     }
+    
 
     // Handle subscription.charged event
     if (event.event === "subscription.charged") {
