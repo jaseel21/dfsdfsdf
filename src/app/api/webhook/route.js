@@ -51,6 +51,8 @@ export async function POST(req) {
 
 
     if (event.event === "subscription.activated") {
+      await connectDB.collection("webhookLogs").insertOne({ message: "Webhook triggered", event: event.event, timestamp: new Date() });
+
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
