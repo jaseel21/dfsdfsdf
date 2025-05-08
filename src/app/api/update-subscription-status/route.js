@@ -23,9 +23,9 @@ export async function POST(req) {
           return NextResponse.json({ exist: true });
     }
  
-    if (!razorpaySubscriptionId || !razorpay_payment_id || !status) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    // if (!razorpaySubscriptionId || !razorpay_payment_id || !status) {
+    //   return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // }
 
     // const subscription = await Subscription.findOne({ razorpaySubscriptionId });
     // if (!subscription) {

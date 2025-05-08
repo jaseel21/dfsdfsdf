@@ -42,18 +42,18 @@ export async function POST(req) {
 
    
     
-    const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+    // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
     
-      const toNumber =  `whatsapp:+91${phone}`;
-    try {
-      await twilioClient.messages.create({
-        body: `Your ${period} donation subscription is created! Amount: ₹${amount}. Please complete the initial payment.`,
-        from: fromNumber,
-        to: toNumber,
-      });
-    } catch (twilioError) {
-      console.error("Twilio error:", twilioError.message);
-    }
+    //   const toNumber =  `whatsapp:+91${phone}`;
+    // try {
+    //   await twilioClient.messages.create({
+    //     body: `Your ${period} donation subscription is created! Amount: ₹${amount}. Please complete the initial payment.`,
+    //     from: fromNumber,
+    //     to: toNumber,
+    //   });
+    // } catch (twilioError) {
+    //   console.error("Twilio error:", twilioError.message);
+    // }
 
     return NextResponse.json({ subscriptionId: razorpaySubscription.id });
   } catch (error) {
