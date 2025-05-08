@@ -314,8 +314,14 @@ export function ContributionForm({
             'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
           },
           body: JSON.stringify({
-            amount: Math.round(form.amount * 100),
-            campaignId: campaign.id,
+            amount: form.amount * 100,
+            type: "Campaign",
+            name: form.fullName,
+            phone: form.phoneNumber,
+            email: form.email,
+            district: district,
+            panchayat: panchayat,
+            campaignId: campaign.id || null,
           }),
         });
         const orderData = await orderResponse.json();
@@ -329,31 +335,31 @@ export function ContributionForm({
           description: `Donation for ${campaign.title}`,
           order_id: orderData.orderId,
           handler: async (response) => {
-            const paymentData = {
-              amount: form.amount,
-              name: form.fullName,
-              phone: form.phoneNumber,
-              type: "Campaign",
-              district: district || "Other",
-              panchayat: panchayat || "",
-              email: form.email,
-              campaignId: campaign.id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpaySignature: response.razorpay_signature,
-            };
+            // const paymentData = {
+            //   amount: form.amount,
+            //   name: form.fullName,
+            //   phone: form.phoneNumber,
+            //   type: "Campaign",
+            //   district: district || "Other",
+            //   panchayat: panchayat || "",
+            //   email: form.email,
+            //   campaignId: campaign.id,
+            //   razorpayPaymentId: response.razorpay_payment_id,
+            //   razorpayOrderId: response.razorpay_order_id,
+            //   razorpaySignature: response.razorpay_signature,
+            // };
 
             startLoading();
-            const saveResponse = await fetch("/api/donations/create", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-              },
-              body: JSON.stringify(paymentData),
-            });
-            const saveData = await saveResponse.json();
-            if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
+            // const saveResponse = await fetch("/api/donations/create", {
+            //   method: "POST",
+            //   headers: {
+            //     "Content-Type": "application/json",
+            //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+            //   },
+            //   body: JSON.stringify(paymentData),
+            // });
+            // const saveData = await saveResponse.json();
+            // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
 
             const updateResponse = await fetch(`/api/campaigns/${campaign.id}/update-amount`, {
               method: "PATCH",
@@ -374,7 +380,7 @@ export function ContributionForm({
             stopLoading();
 
             router.push(
-              `/campaigns/success?donationId=${saveData.id}&amount=${form.amount}&name=${encodeURIComponent(
+              `/campaigns/success?donationId=${"noId"}&amount=${form.amount}&name=${encodeURIComponent(
                 form.fullName
               )}&phone=${form.phoneNumber}&type=${"Campaign"}&district=${district || "Other"}&panchayat=${
                 panchayat || ""

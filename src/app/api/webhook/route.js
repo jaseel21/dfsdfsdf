@@ -221,7 +221,7 @@ export async function POST(req) {
       }
 
       // Handle different payment types
-      if (["General", "Yatheem", "Hafiz", "Building五、", "Box"].includes(type)) {
+      if (["General", "Yatheem", "Hafiz", "Building五、", "Box","Campaign"].includes(type)) {
         const donation = new Donation({
           amount,
           type: type || "General",
@@ -428,7 +428,7 @@ export async function POST(req) {
       // Standardize phone number
       const standardizedPhone = standardizePhoneNumber(phone || payment.contact);
 
-      if (["General", "Yatheem", "Hafiz", "Building", "Box"].includes(type)) {
+      if (["General", "Yatheem", "Hafiz", "Building", "Box","Campaign"].includes(type)) {
         const donation = new Donation({
           amount,
           type: type || "General",
