@@ -1,5 +1,5 @@
 import connectDB from "../../../lib/db";
-import Donation from "../../../models/Donation";
+import Donation from "../../../models/AutoDonation";
 import Subscription from "../../../models/Subscription";
 import Sponsor from "@/models/Sponsor";
 import Donor from "@/models/Donor";
