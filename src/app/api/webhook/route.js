@@ -73,7 +73,7 @@ export async function POST(req) {
         period,
         district,
         panchayat,
-        emailAddress,
+        email,
         type,
         planId,
       } = notes;
@@ -87,7 +87,7 @@ export async function POST(req) {
         type: type || "General",
         method: "auto",
         planId,
-        email: emailAddress || payment.email || "",
+        email: email || payment.email || "",
         panchayat: panchayat || "",
         period,
         razorpayOrderId: payment.order_id || "",

@@ -316,7 +316,7 @@ export default function SubscriptionPage() {
       const { data } = await axios.post(
         "/api/create-subscription",
         { planId, name: formData.fullName,
-           amount: formData.amount,
+           amount: formData.amount* 100,
             phone: phoneNumber,
             period: formData.period,
             name:formData.fullName,
