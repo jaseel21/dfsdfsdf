@@ -1,13 +1,13 @@
 import Razorpay from "razorpay";
 import connectDB from "../../../lib/db";
 import { NextResponse } from "next/server";
-import twilio from "twilio";
+// import twilio from "twilio";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export async function POST(req) {
   try {
