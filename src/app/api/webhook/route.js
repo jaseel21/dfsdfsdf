@@ -6,24 +6,11 @@ import Donor from "@/models/Donor";
 import Sdonation from "@/models/Sdonation";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import twilio from "twilio";
 
-// Initialize Twilio client
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-const verifySignature = (rawBody, signature, secret) => {
-  if (!secret) {
-    console.error("RAZORPAY_WEBHOOK_SECRET is not set");
-    return false;
-  }
+const verifySignature = (body, signature, secret) => {
   const hmac = crypto.createHmac("sha256", secret);
-  hmac.update(rawBody);
-  const computedSignature = hmac.digest("hex");
-  console.log("Signature Verification:", {
-    received: signature,
-    computed: computedSignature,
-  });
-  return computedSignature === signature;
+  hmac.update(JSON.stringify(body));
+  return hmac.digest("hex") === signature;
 };
 
 // Function to standardize phone numbers
@@ -50,136 +37,96 @@ const standardizePhoneNumber = (phone) => {
 
 export async function POST(req) {
   try {
-    // Validate environment variables
-    const requiredEnvVars = [
-      "RAZORPAY_WEBHOOK_SECRET",
-      "API_BASE_URL",
-      "TWILIO_PHONE_NUMBER",
-      "TWILIO_ACCOUNT_SID",
-      "TWILIO_AUTH_TOKEN",
-    ];
-    const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
-    if (missingEnvVars.length > 0) {
-      console.error("Missing environment variables:", missingEnvVars.join(", "));
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-    }
-
-    // Connect to database
     await connectDB();
-
-    // Get raw body and headers
     const rawBody = await req.text();
-    let event;
-    try {
-      event = JSON.parse(rawBody);
-    } catch (parseError) {
-      console.error("Failed to parse webhook body:", parseError.message);
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
+    const event = JSON.parse(rawBody);
     const signature = req.headers.get("x-razorpay-signature");
 
-    // Log webhook details
-    console.log("Received Webhook:", {
-      event: event.event,
-      payload: JSON.stringify(event.payload || {}, null, 2),
-      signature,
-    });
+    console.log("Received webhook event:", event.event);
 
-    // Verify signature
-    if (!verifySignature(rawBody, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
+    if (!verifySignature(event, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
       console.error("Invalid signature for webhook event:", event.event);
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
+
     if (event.event === "subscription.activated") {
+      await connectDB.collection("webhookLogs").insertOne({ message: "Webhook triggered", event: event.event, timestamp: new Date() });
+
+      const subscriptionData = event.payload.subscription.entity;
+      const subscriptionId = subscriptionData.id;
+      const notes = subscriptionData.notes || {};
+      const startAt = subscriptionData.start_at;
+    
+      // Safely extract or set defaults
+      const fullName = notes.name || "Anonymous";
+      const standardizedPhone = notes.phoneNumber || "";
+      const payment = subscriptionData.latest_invoice?.payment || {};
+      const paymentId = payment.id || "";
+    
+      // Convert Unix timestamp to ISO string if available
+      const subscriptionStartDate = startAt
+        ? new Date(startAt * 1000).toISOString()
+        : null;
+    
+      const {
+        amount,
+        period,
+        district,
+        panchayat,
+        emailAddress,
+        type,
+        planId,
+      } = notes;
+    
+      const subscriptionDetails = {
+        razorpaySubscriptionId: subscriptionId,
+        name: fullName,
+        amount,
+        phoneNumber: standardizedPhone,
+        district: district || "",
+        type: type || "General",
+        method: "auto",
+        planId,
+        email: emailAddress || payment.email || "",
+        panchayat: panchayat || "",
+        period,
+        razorpayOrderId: payment.order_id || "",
+        razorpay_payment_id: paymentId,
+        subscriptionStartDate, // added the new field here
+        status: "active",
+      };
+    
       try {
-        console.log("Processing subscription.activated...");
-
-        // Log webhook event to database
-        await connectDB.collection("webhookLogs").insertOne({
-          message: "Webhook triggered",
-          event: event.event,
-          timestamp: new Date(),
+        const apiResponse = await fetch(`https://dfsdfsdf-orcin.vercel.app/api/update-subscription-status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+          body: JSON.stringify(subscriptionDetails),
         });
-
-        // Safely access subscription data
-        const subscriptionData = event.payload?.subscription?.entity || {};
-        if (!subscriptionData.id) {
-          console.error("Missing subscription ID in payload");
-          return NextResponse.json({ error: "Invalid subscription data" }, { status: 400 });
+    
+        const apiData = await apiResponse.json();
+        if (!apiResponse.ok) {
+          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
+        } else {
+          console.log("Subscription status updated successfully:", apiData);
         }
-
-        const subscriptionId = subscriptionData.id;
-        const notes = subscriptionData.notes || {};
-        const startAt = subscriptionData.start_at || null;
-
-        // Extract fields with defaults
-        const fullName = notes.name || "Anonymous";
-        const standardizedPhone = standardizePhoneNumber(notes.phoneNumber || "");
-        const payment = subscriptionData.latest_invoice?.payment || {};
-        const paymentId = payment.id || "";
-        const subscriptionStartDate = startAt ? new Date(startAt * 1000).toISOString() : null;
-
-        const subscriptionDetails = {
-          razorpaySubscriptionId: subscriptionId,
-          name: fullName,
-          amount: notes.amount || 0,
-          phoneNumber: standardizedPhone || "",
-          district: notes.district || "",
-          type: notes.type || "General",
-          method: "auto",
-          planId: notes.planId || "",
-          email: notes.emailAddress || payment.email || "",
-          panchayat: notes.panchayat || "",
-          period: notes.period || "",
-          razorpayOrderId: payment.order_id || "",
-          razorpay_payment_id: paymentId,
-          subscriptionStartDate,
-          status: "active",
-        };
-
-        console.log("Subscription Details:", JSON.stringify(subscriptionDetails, null, 2));
-
-        // Call API to update subscription status
-        try {
-          const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-            },
-            body: JSON.stringify(subscriptionDetails),
-          });
-
-          const apiData = await apiResponse.json();
-          if (!apiResponse.ok) {
-            console.error("Failed to update subscription status:", apiData.error || "Unknown error");
-          } else {
-            console.log("Subscription status updated successfully:", apiData);
-          }
-        } catch (apiError) {
-          console.error("Error calling /api/update-subscription-status:", apiError.message);
-        }
-      } catch (subError) {
-        console.error("Error in subscription.activated handler:", subError.message, subError.stack);
-        return NextResponse.json({ error: "Failed to process subscription activation" }, { status: 500 });
+      } catch (apiError) {
+        console.error("Error calling /api/update-subscription-status:", apiError.message);
       }
     }
+    
 
     // Handle subscription.charged event
     if (event.event === "subscription.charged") {
-      const subscriptionId = event.payload?.subscription?.entity?.id;
-      const paymentId = event.payload?.payment?.entity?.id;
-      const amount = event.payload?.payment?.entity?.amount / 100;
-
-      if (!subscriptionId || !paymentId) {
-        console.error("Missing subscriptionId or paymentId in subscription.charged event");
-        return NextResponse.json({ received: true });
-      }
+      const subscriptionId = event.payload.subscription.entity.id;
+      const paymentId = event.payload.payment.entity.id;
+      const amount = event.payload.payment.entity.amount / 100;
 
       const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (!subscription || subscription.status !== "active") {
-        console.log("Subscription not found or inactive:", subscriptionId);
         return NextResponse.json({ received: true });
       }
 
@@ -215,40 +162,33 @@ export async function POST(req) {
         {
           createdAt: new Date(),
           lastPaymentAt: new Date(),
-          phone: standardizedPhone,
+          phone: standardizedPhone, // Update phone number in subscription
         },
         { new: true }
       );
       console.log("Subscription Updated:", updatedSubscription);
 
       // Twilio notification
-      if (twilioClient && standardizedPhone) {
-        const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-        const toNumber = standardizedPhone.startsWith("+")
-          ? `whatsapp:${standardizedPhone}`
-          : `whatsapp:+91${standardizedPhone}`;
-        try {
-          await twilioClient.messages.create({
-            body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
-            from: fromNumber,
-            to: toNumber,
-          });
-        } catch (twilioError) {
-          console.error("Twilio error:", twilioError.message);
-        }
+      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+      const toNumber = standardizedPhone.startsWith("+")
+        ? `whatsapp:${standardizedPhone}`
+        : `whatsapp:+91${standardizedPhone}`;
+      try {
+        await twilioClient.messages.create({
+          body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
+          from: fromNumber,
+          to: toNumber,
+        });
+      } catch (twilioError) {
+        console.error("Twilio error:", twilioError.message);
       }
     }
 
     // Handle payment.captured event
     if (event.event === "payment.captured") {
-      const payment = event.payload?.payment?.entity || {};
+      const payment = event.payload.payment.entity;
       const paymentId = payment.id;
       const amount = payment.amount / 100;
-
-      if (!paymentId) {
-        console.error("Missing paymentId in payment.captured event");
-        return NextResponse.json({ received: true });
-      }
 
       // Check for duplicates
       const existingDonation = await Donation.findOne({ razorpayPaymentId: paymentId });
@@ -282,7 +222,7 @@ export async function POST(req) {
       }
 
       // Handle different payment types
-      if (["General", "Yatheem", "Hafiz", "Building", "Box"].includes(type)) {
+      if (["General", "Yatheem", "Hafiz", "Building五、", "Box"].includes(type)) {
         const donation = new Donation({
           amount,
           type: type || "General",
@@ -306,7 +246,7 @@ export async function POST(req) {
         console.log("One-time donation recorded:", donation);
 
         // Optional Twilio notification for one-time donation
-        if (twilioClient && standardizedPhone) {
+        if (standardizedPhone) {
           const toNumber = standardizedPhone.startsWith("+")
             ? `whatsapp:${standardizedPhone}`
             : `whatsapp:+91${standardizedPhone}`;
@@ -320,7 +260,7 @@ export async function POST(req) {
             console.error("Twilio error for one-time donation:", twilioError.message);
           }
         }
-      } else if (["Sponsor-Hafiz", "Sponsor-Yatheem"].includes(type)) {
+      }else if (["Sponsor-Hafiz", "Sponsor-Yatheem"].includes(type)) {
         const sponsor = new Sponsor({
           amount,
           type: type || "null",
@@ -341,7 +281,7 @@ export async function POST(req) {
           createdAt: new Date(payment.created_at * 1000),
         });
         await sponsor.save();
-        console.log("Completed sponsor donation recorded:", sponsor);
+        console.log("Complelted sponsor donation recorded:", sponsor);
       } else if (type === "Subscription") {
         const existingSdonation = await Sdonation.findOne({ razorpayPaymentId: paymentId });
         if (existingSdonation) {
@@ -400,7 +340,7 @@ export async function POST(req) {
         console.log("Sdonation created:", newDonation);
 
         // Twilio notification for Subscription
-        if (twilioClient && standardizedPhone) {
+        if (standardizedPhone) {
           const toNumber = standardizedPhone.startsWith("+") ? `whatsapp:${standardizedPhone}` : `whatsapp:+91${standardizedPhone}`;
           try {
             await twilioClient.messages.create({
@@ -412,26 +352,15 @@ export async function POST(req) {
             console.error("Twilio error for subscription donation:", twilioError.message);
           }
         }
-      } else if (type === "Subscription-auto") {
+      }else if(type==="Subscription-auto"){
         console.log("Processing Subscription-auto payment:", paymentId);
 
         // Prepare payload for /api/update-subscription-status
-        const subscriptionData = {
-          razorpaySubscriptionId: paymentId,
-          name: fullName || "Anonymous",
-          amount,
-          phoneNumber: standardizedPhone,
-          district: district || "",
-          type: type || "General",
-          method: "auto",
-          planId: notes.planId || "",
-          email: emailAddress || payment.email || "",
-          panchayat: panchayat || "",
-          period: period || "",
-          razorpayOrderId: payment.order_id || "",
-          razorpay_payment_id: paymentId,
-          status: "active",
-        };
+       
+    
+        // Update the subscription notes with razorpaySubscriptionId and other fields
+       
+      
 
         // Make API call to /api/update-subscription-status
         try {
@@ -455,7 +384,7 @@ export async function POST(req) {
         }
 
         // Optional Twilio notification for Subscription-auto
-        if (twilioClient && standardizedPhone) {
+        if (standardizedPhone) {
           const toNumber = standardizedPhone.startsWith("+") ? `whatsapp:${standardizedPhone}` : `whatsapp:+91${standardizedPhone}`;
           try {
             await twilioClient.messages.create({
@@ -472,19 +401,13 @@ export async function POST(req) {
 
     // Handle payment.failed event
     if (event.event === "payment.failed") {
-      const payment = event.payload?.payment?.entity || {};
+      const payment = event.payload.payment.entity;
       const paymentId = payment.id;
       const amount = payment.amount / 100;
-
-      if (!paymentId) {
-        console.error("Missing paymentId in payment.failed event");
-        return NextResponse.json({ received: true });
-      }
 
       // Check for duplicates
       const existingDonation = await Donation.findOne({ razorpayPaymentId: paymentId });
       if (existingDonation) {
-        console.log("Duplicate donation found:", paymentId);
         return NextResponse.json({ received: true });
       }
 
@@ -554,7 +477,7 @@ export async function POST(req) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error.message, error.stack);
+    console.error("Webhook error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
