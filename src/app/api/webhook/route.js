@@ -62,7 +62,7 @@ export async function POST(req) {
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
-      const paymentId = payment.id || "";
+      const paymentId = payment.payment_id || payment.id || "";
     
       // Convert Unix timestamp to ISO string if available
       const subscriptionStartDate = startAt
@@ -98,7 +98,7 @@ export async function POST(req) {
       };
     
       try {
-        const apiResponse = await fetch(`https://dfsdfsdf-orcin.vercel.app/api/update-subscription-status`, {
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -244,6 +244,17 @@ export async function POST(req) {
 
         await donation.save();
         console.log("One-time donation recorded:", donation);
+
+        if(["Campaign"].includes(tyep)){
+           await fetch(`${process.env.API_BASE_URL}/api/campaigns/${campaignId}/update-amount`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+              },
+              body: JSON.stringify({ amount: form.amount }),
+            });
+        }
 
         // Optional Twilio notification for one-time donation
         if (standardizedPhone) {
