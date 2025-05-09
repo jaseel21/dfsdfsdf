@@ -24,7 +24,27 @@ export async function POST(req) {
     await connectToDatabase();
 
     const body = await req.json();
-    const { fullName, location, amount, period, phone, email,callbackUrl} = body;
+    const { fullName,
+       location,
+        amount,
+         period, 
+         phone,
+          email,
+          callbackUrl
+        } = body;
+
+
+        function standardizePhoneNumber(phone, defaultCountryCode = "+91") {
+  if (!phone) return ""; 
+  const cleanPhone = phone.replace(/\D/g, "");
+  if (phone.startsWith("+")) {
+    return phone; 
+  }
+  return `${defaultCountryCode}${cleanPhone}`;
+}
+
+// Standardize the phone number
+const standardizedPhone = standardizePhoneNumber(phone);
 
     if (!fullName || !location || !amount || !period || !phone) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -59,11 +79,17 @@ export async function POST(req) {
         notify_email: email || "default@example.com",
       },
       notes: {
-        fullName,
-        district,
-        panchayat,
-        amount,
-        phone,
+        razorpaySubscriptionId: "", // Subscription ID added here
+        name: fullName || "Anonymous",
+        amount: amountInPaise, // Convert to rupees and store as string
+        phoneNumber: standardizedPhone,
+        district: district || "",
+        type: "Subscription-auto",
+        method: "auto",
+        planId,
+        email: email || "",
+        panchayat: panchayat || "",
+        period,
       },
     };
 

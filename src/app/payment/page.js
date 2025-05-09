@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import axios from "axios";
 
 export default function PaymentPage() {
   // const router = useRouter();
@@ -53,31 +52,31 @@ export default function PaymentPage() {
             const razorpayPaymentId = response.razorpay_payment_id;
             const razorpaySubscriptionId = subscriptionId;
 
-            const apiResponse = await axios.post(
-              "/api/update-subscription-status",
-              {
-                razorpaySubscriptionId,
-                name,
-                amount,
-                phoneNumber: phone,
-                district,
-                type: "General",
-                method: "auto",
-                planId,
-                email,
-                panchayat,
-                period,
-                razorpay_payment_id: razorpayPaymentId,
-                status: "active",
-              },
-              {
-                headers: {
-                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-                },
-              }
-            );
+            // const apiResponse = await axios.post(
+            //   "/api/update-subscription-status",
+            //   {
+            //     razorpaySubscriptionId,
+            //     name,
+            //     amount,
+            //     phoneNumber: phone,
+            //     district,
+            //     type: "General",
+            //     method: "auto",
+            //     planId,
+            //     email,
+            //     panchayat,
+            //     period,
+            //     razorpay_payment_id: razorpayPaymentId,
+            //     status: "active",
+            //   },
+            //   {
+            //     headers: {
+            //       "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+            //     },
+            //   }
+            // );
 
-            const { data } = apiResponse;
+            // const { data } = apiResponse;
 
             const queryParams = new URLSearchParams({
               razorpaySubscriptionId,
@@ -106,10 +105,10 @@ export default function PaymentPage() {
             window.location.href = callbackUrlWithQuery;
 
             // Fallback if redirect fails
-            setTimeout(() => {
-              alert("Redirect failed. Please check your app or contact support.");
-              axios.post("/api/payment-fallback", { subscriptionId, status: "pending" });
-            }, 2000);
+            // setTimeout(() => {
+            //   alert("Redirect failed. Please check your app or contact support.");
+            //   axios.post("/api/payment-fallback", { subscriptionId, status: "pending" });
+            // }, 2000);
           } catch (error) {
             console.error("Payment error:", error.response?.status, error.response?.data);
             alert(`Payment failed: ${error.response?.data?.error || "Please try again later."}`);

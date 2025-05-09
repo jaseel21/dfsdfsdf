@@ -271,6 +271,7 @@ const DonationForm = ({ instituteId, instituteName, onDonationComplete }: Donati
     try {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) throw new Error("Failed to load payment gateway");
+            const [district, panchayat] = form.location.split(", ").map((part) => part.trim());
 
       const orderResponse = await fetch("/api/donations/create-order", {
         method: "POST",
@@ -278,14 +279,20 @@ const DonationForm = ({ instituteId, instituteName, onDonationComplete }: Donati
           'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
         },
         body: JSON.stringify({
-          amount: Math.round(form.amount * 100),
-          instituteId: instituteId,
+           amount: form.amount * 100,
+          type: "Institution",
+          name: form.fullName,
+          phone: form.phoneNumber,
+          email: form.email,
+          district: district,
+          panchayat: panchayat,
+          instituteId: instituteId || null,
         }),
       });
       const orderData = await orderResponse.json();
       if (!orderResponse.ok) throw new Error(orderData.error || "Order creation failed");
 
-      const [district, panchayat] = form.location.split(", ").map((part) => part.trim());
+
 
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_YourKeyIDHere",
@@ -295,34 +302,34 @@ const DonationForm = ({ instituteId, instituteName, onDonationComplete }: Donati
         description: `Donation for ${instituteName}`,
         order_id: orderData.orderId,
         handler: async (response: RazorpayResponse) => {
-          const paymentData = {
-            amount: form.amount,
-            name: form.fullName,
-            phone: form.phoneNumber,
-            type: "Institution",
-            district: district || "Other",
-            panchayat: panchayat || "",
-            email: form.email,
-            instituteId: instituteId,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpayOrderId: response.razorpay_order_id,
-            razorpaySignature: response.razorpay_signature,
-          };
+          // const paymentData = {
+          //   amount: form.amount,
+          //   name: form.fullName,
+          //   phone: form.phoneNumber,
+          //   type: "Institution",
+          //   district: district || "Other",
+          //   panchayat: panchayat || "",
+          //   email: form.email,
+          //   instituteId: instituteId,
+          //   razorpayPaymentId: response.razorpay_payment_id,
+          //   razorpayOrderId: response.razorpay_order_id,
+          //   razorpaySignature: response.razorpay_signature,
+          // };
 
-          startLoading()
-          const saveResponse = await fetch("/api/donations/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json",
-              'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-             },
-            body: JSON.stringify(paymentData),
-          });
-          const saveData = await saveResponse.json();
-          if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
+          // startLoading()
+          // const saveResponse = await fetch("/api/donations/create", {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json",
+          //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          //    },
+          //   body: JSON.stringify(paymentData),
+          // });
+          // const saveData = await saveResponse.json();
+          // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
          
           stopLoading();
           router.push(
-            `/institute/success?donationId=${saveData.id}&amount=${form.amount}&name=${encodeURIComponent(
+            `/institute/success?donationId=${"noId"}&amount=${form.amount}&name=${encodeURIComponent(
               form.fullName
             )}&phone=${form.phoneNumber}&type=${"Institution"}&district=${district || "Other"}&panchayat=${
               panchayat || ""

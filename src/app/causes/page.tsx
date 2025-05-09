@@ -143,6 +143,7 @@ export default function CausesPage() {
     try {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) throw new Error("Failed to load Razorpay SDK");
+      const [district, panchayath] = formData.location.split(", ").map((part) => part.trim());
 
       const response = await fetch("/api/donations/create-order", {
         method: "POST",
@@ -150,13 +151,24 @@ export default function CausesPage() {
           "Content-Type": "application/json",
           "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
-        body: JSON.stringify({ amount: formData.amount * 100 }),
+        body: JSON.stringify(
+          {  
+            amount: formData.amount * 100,
+          type: formData.donationType,
+          name: formData.fullName,
+          phone: formData.phoneNumber,
+          email: formData.email,
+          district:district,
+          panchayat: panchayath,
+         
+        }
+        ),
       });
 
       const orderData: { orderId: string; error?: string } = await response.json();
       if (!response.ok) throw new Error(orderData.error || "Order creation failed");
 
-      const [district, panchayath] = formData.location.split(", ").map((part) => part.trim());
+      
 
       await new Promise<void>((resolve, reject) => {
         const options: RazorpayOptions = {
@@ -168,33 +180,33 @@ export default function CausesPage() {
           order_id: orderData.orderId,
           handler: async (response: RazorpayResponse) => {
             try {
-              const paymentData = {
-                amount: formData.amount,
-                name: formData.fullName,
-                phone: formData.phoneNumber,
-                type: formData.donationType,
-                district: district,
-                panchayat: panchayath,
-                email: formData.email,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySignature: response.razorpay_signature,
-              };
+              // const paymentData = {
+              //   amount: formData.amount,
+              //   name: formData.fullName,
+              //   phone: formData.phoneNumber,
+              //   type: formData.donationType,
+              //   district: district,
+              //   panchayat: panchayath,
+              //   email: formData.email,
+              //   razorpayPaymentId: response.razorpay_payment_id,
+              //   razorpayOrderId: response.razorpay_order_id,
+              //   razorpaySignature: response.razorpay_signature,
+              // };
 
-              const saveResponse = await fetch("/api/donations/create", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-                },
-                body: JSON.stringify(paymentData),
-              });
+              // const saveResponse = await fetch("/api/donations/create", {
+              //   method: "POST",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //     "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+              //   },
+              //   body: JSON.stringify(paymentData),
+              // });
 
-              const saveData: { id: string; error?: string } = await saveResponse.json();
-              if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
+              // const saveData: { id: string; error?: string } = await saveResponse.json();
+              // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
 
               router.push(
-                `/causes/success?donationId=${saveData.id}&amount=${formData.amount}&name=${encodeURIComponent(
+                `/causes/success?donationId=${"noId"}&amount=${formData.amount}&name=${encodeURIComponent(
                   formData.fullName
                 )}&phone=${formData.phoneNumber}&type=${formData.donationType}&district=${
                   district || "Other"
