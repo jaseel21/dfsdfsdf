@@ -1,5 +1,6 @@
 import connectDB from "../../../lib/db";
-import Donation from "../../../models/AutoDonation";
+import AutoDonation from "../../../models/AutoDonation";
+import Donation from "@/models/Donation";
 import Subscription from "../../../models/Subscription";
 import Sponsor from "@/models/Sponsor";
 import Donor from "@/models/Donor";
@@ -135,7 +136,7 @@ export async function POST(req) {
         return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
       }
 
-      const donation = new Donation({
+      const AutoDonation = new AutoDonation({
         donorId: subscription.donorId,
         razorpaySubscriptionId: subscriptionId,
         name: subscription.name || "Anonymous",
@@ -153,8 +154,8 @@ export async function POST(req) {
         subscriptionId: subscription._id,
         type: subscription.type || "General",
       });
-      await donation.save();
-      console.log("Recurring donation recorded:", donation);
+      await autoDonation.save();
+      console.log("Recurring donation recorded:", autoDonation);
 
       const updatedSubscription = await Subscription.findByIdAndUpdate(
         subscription._id,
@@ -221,7 +222,7 @@ export async function POST(req) {
       }
 
       // Handle different payment types
-      if (["General", "Yatheem", "Hafiz", "Building五、", "Box","Campaign"].includes(type)) {
+      if (["General", "Yatheem", "Hafiz", "Building五、", "Box", "Campaign"].includes(type)) {
         const donation = new Donation({
           amount,
           type: type || "General",
