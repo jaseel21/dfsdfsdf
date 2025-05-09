@@ -136,7 +136,7 @@ export async function POST(req) {
         return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
       }
 
-      const AutoDonation = new AutoDonation({
+      const autoDonation = new AutoDonation({
         donorId: subscription.donorId,
         razorpaySubscriptionId: subscriptionId,
         name: subscription.name || "Anonymous",
