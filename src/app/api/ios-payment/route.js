@@ -58,9 +58,9 @@ export async function POST(req) {
       district,
       panchayat,
       message,
+      period,
       boxId = null,
       instituteId = null,
-      
       campaignId = null,
       callbackUrl
     } = body;
@@ -98,10 +98,11 @@ export async function POST(req) {
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
       notes: {
-        name: name || "Anonymous",
+        fullName: name || "Anonymous",
         type: type || "General",
         phoneNumber: standardizedPhone,
         email: email || "",
+        period:period,
         district: district || "",
         panchayat: panchayat || "",
         message: message || "",
