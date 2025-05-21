@@ -15,7 +15,7 @@ export default function NormalPaymentPage() {
   const email = searchParams.get("email");
   const district = searchParams.get("district");
   const panchayat = searchParams.get("panchayat");
-    const callbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = searchParams.get("callbackUrl");
   const type = searchParams.get("type");
   const message = searchParams.get("message");
   const boxId = searchParams.get("boxId");
@@ -39,14 +39,17 @@ export default function NormalPaymentPage() {
       script.onerror = () => {
         console.error("Failed to load Razorpay SDK");
         setError("Failed to load payment gateway. Please try again later.");
+        alert("Failed to load payment gateway. Please try again later.");
       };
       document.body.appendChild(script);
     };
 
     const initiatePayment = () => {
-      if (!orderId || !amount) {
-        console.error("Missing required parameters:", { orderId, amount });
+      // Validate required parameters
+      if (!orderId || !amount || !callbackUrl) {
+        console.error("Missing required parameters:", { orderId, amount, callbackUrl });
         setError("Missing payment details. Please try again.");
+        alert("Missing payment details. Please try again.");
         return;
       }
 
@@ -79,21 +82,24 @@ export default function NormalPaymentPage() {
               campaignId: campaignId || "",
             }).toString();
 
-            // Redirect to success page
-             const validCallbackUrl = callbackUrl.startsWith("http") || callbackUrl.startsWith("acme://")
+            // Validate and construct callback URL
+            const validCallbackUrl = callbackUrl.startsWith("http") || callbackUrl.startsWith("acme://")
               ? callbackUrl
               : "acme://payment-success";
             const callbackUrlWithQuery = `${validCallbackUrl}?${queryParams}`;
 
             console.log("Redirecting to:", callbackUrlWithQuery);
             window.location.href = callbackUrlWithQuery;
-            // Fallback if redirect fails
-            setTimeout(() => {
-              setError("Redirect failed. Please check your app or contact support.");
-            }, 2000);
+
+            // Fallback if redirect fails (commented out as in PaymentPage)
+            // setTimeout(() => {
+            //   alert("Redirect failed. Please check your app or contact support.");
+            //   axios.post("/api/payment-fallback", { orderId, status: "pending" });
+            // }, 2000);
           } catch (error) {
-            console.error("Payment error:", error);
-            setError(`Payment failed: ${error.message || "Please try again later."}`);
+            console.error("Payment error:", error.response?.status, error.response?.data);
+            setError(`Payment failed: ${error.response?.data?.error || "Please try again later."}`);
+            alert(`Payment failed: ${error.response?.data?.error || "Please try again later."}`);
           }
         },
         prefill: {
@@ -121,12 +127,13 @@ export default function NormalPaymentPage() {
       rzp.on("payment.failed", (response) => {
         console.error("Payment failed:", response.error.description);
         setError(`Payment failed: ${response.error.description}. Please try again.`);
+        alert(`Payment failed: ${response.error.description}. Please try again.`);
       });
       rzp.open();
     };
 
     loadRazorpay();
-  }, [orderId, amount, name, phone, email, district, panchayat, type, message, boxId, instituteId, campaignId]);
+  }, [orderId, amount, name, phone, email, district, panchayat, type, message, boxId, instituteId, campaignId, callbackUrl]);
 
   if (error) {
     return (
