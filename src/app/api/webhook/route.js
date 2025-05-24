@@ -70,6 +70,7 @@ export async function POST(req) {
         : null;
     
       const {
+       
         amount,
         period,
         district,
@@ -199,6 +200,8 @@ export async function POST(req) {
 
       // Extract user data from notes
       const {
+         donorId,
+        subscriptionID,
         fullName,
         phone,
         type,
@@ -407,6 +410,26 @@ export async function POST(req) {
             console.error("Twilio error for Subscription-auto donation:", twilioError.message);
           }
         }
+      } else if (type === "Subscription-charge") {
+         const newDonation = await Sdonation.create({
+          donorId: donorId,
+          subscriptionId: subscriptionID,
+          phone: standardizedPhone,
+          name: fullName || "Anonymous",
+          amount,
+          email: emailAddress,
+          type: type || "General",
+          period,
+          district,
+          panchayat,
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id,
+          paymentStatus: "paid",
+          paymentDate: new Date(payment.created_at * 1000),
+        });
+         await newDonation.save();
+        console.log("Sdonation created:", newDonation);
+
       }
     }
 

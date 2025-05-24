@@ -657,27 +657,88 @@ export default function SubscriptionPage() {
     }
 
     try {
+      // const checkResponse = await fetch("/api/check-phone", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+      //   },
+      //   body: JSON.stringify({ phone: phoneNumber, role: "Subscriber" }),
+      // });
+
+      // const checkData = await checkResponse.json();
+      // if (checkData.exists) {
+      //   toast.info("You are a subscription user, not a new one.", {
+      //     position: "top-right",
+      //     autoClose: 3000,
+      //     hideProgressBar: false,
+      //     closeOnClick: true,
+      //     pauseOnHover: true,
+      //   });
+      //   setIsLoading(false);
+      //   return;
+      // }
+
+      // const scriptLoaded = await loadRazorpayScript();
+      // if (!scriptLoaded) {
+      //   alert("Failed to load Razorpay SDK.");
+      //   setIsLoading(false);
+      //   stopLoading();
+      //   return;
+      // }
+
+      // const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
+
       const orderResponse = await fetch("/api/donations/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
         },
-        body: JSON.stringify({ amount: parseFloat(subscriptionData.amount) * 100 }),
+
+
+        //  donorId: subscriptionData.donorId,
+        //     subscriptionId: subscriptionData._id,
+        //     name: subscriptionData.name,
+        //     email: subscriptionData.email,
+        //     phone: subscriptionData.phone,
+        //     amount: parseFloat(subscriptionData.amount),
+        //     period: subscriptionData.period,
+        //     type: "Subscription-charge",
+        //     district: subscriptionData.district,
+        //     method: "manual",
+        //     panchayat: subscriptionData.panchayat,
+
+
+        body: JSON.stringify({
+           amount: subscriptionData.amount * 100,
+            donorId: subscriptionData.donorId,
+             subscriptionId: subscriptionData._id,
+           name: subscriptionData.name,
+            phone: subscriptionData.phone,
+            period: subscriptionData.period,
+            type: "Subscription-charge",
+            method: "manual",
+            email: subscriptionData.email,
+            district:subscriptionData.district,
+            panchayat: subscriptionData.panchayat || null,
+           }),
       });
 
       const orderData = await orderResponse.json();
       if (!orderResponse.ok) throw new Error(orderData.error || "Order creation failed");
 
+      
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_YourKeyIDHere",
-        amount: parseFloat(subscriptionData.amount) * 100,
+        amount: subscriptionData.amount * 100,
         currency: "INR",
         name: "AIC Amal App",
-        description: `Payment for subscription (${subscription.type} - ${subscription.period})`,
+        description: `Subscription for General (${subscriptionData.period})`,
         order_id: orderData.orderId,
         handler: async (response) => {
-          const paymentData = {
+          const subscriptionData = {
             donorId: subscriptionData.donorId,
             subscriptionId: subscriptionData._id,
             name: subscriptionData.name,
@@ -695,54 +756,45 @@ export default function SubscriptionPage() {
           };
 
           startLoading();
+          // const saveResponse = await fetch("/api/subscriptions/new", {
+          //   method: "POST",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          //   },
+          //   body: JSON.stringify(subscriptionData),
+          // });
 
-          const saveResponse = await fetch("/api/donations/new", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-            },
-            body: JSON.stringify(paymentData),
+          // const saveData = await saveResponse.json();
+          // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save subscription");
+
+         
+            // alert("You are already a subscription user.");
+        
+            stopLoading();
+            router.push(
+              `/subscription/success?subscriptionId=${"no Id found"}&amount=${formData.amount}&name=${encodeURIComponent(
+                formData.fullName
+              )}&phone=${phoneNumber}&type=General&district=${district}&panchayat=${panchayat || ""}&paymentId=${
+                response.razorpay_payment_id
+              }&orderId=${response.razorpay_order_id}`
+            );
+        
+
+          setSuccessMessageContent({
+            title: "Subscription Activated!",
+            message: `Your ${subscriptionType === "auto" ? "automatic" : "manual"} recurring donation has been set up successfully. Thank you for your ongoing support!`,
           });
-
-          const saveData = await saveResponse.json();
-          if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save payment");
-
-          const newDonation = {
-            subscriptionId: saveData.subscription._id,
-            name: saveData.subscription.name,
-            phone: saveData.subscription.phone,
-            amount: saveData.subscription.amount,
-            period: saveData.subscription.period,
-            paymentStatus: "paid",
-            paymentDate: new Date().toISOString(),
-          };
-          setPaymentHistory([newDonation, ...paymentHistory]);
-          setPaymentStatus("paid");
-
-          stopLoading();
-
-          router.push(
-            `/subscription/success?donationId=${subscriptionData._id}&amount=${saveData.amount}&name=${encodeURIComponent(
-              donor.name
-            )}&phone=${donor.phone}&type=${subscription.type}&district=${subscriptionData.district || "Other"}&panchayat=${
-              subscriptionData.panchayat || ""
-            }&paymentId=${response.razorpay_payment_id}&orderId=${response.razorpay_order_id}`
-          );
+          setTimeout(() => setShowSuccessMessage(false), 3000);
         },
-        prefill: { name: donor.name, email: donor.email, contact: donor.phone },
+        prefill: { name: subscriptionData.name, contact: subscriptionData.phone },
         theme: { color: "#3B82F6" },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
-
-      setSuccessMessageContent({
-        title: "Payment Successful!",
-        message: `Your manual payment of ₹${subscription.amount} for ${subscription.donationType} has been processed successfully. A receipt has been sent to your phone.`,
-      });
     } catch (error) {
-      console.error("Error processing payment:", error);
+      console.error("Error creating subscription:", error);
     } finally {
       setIsLoading(false);
       stopLoading();
