@@ -246,6 +246,18 @@ export async function POST(req) {
         });
 
         await donation.save();
+
+ if(["Box"].includes(tyep)){
+
+   const sresponse = await fetch(`${process.env.API_BASE_URL}/api/boxes/${box.id}/pay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+      },
+      body: JSON.stringify({ paymentDate: new Date(), amount: customAmount }),
+    });
+ }
         console.log("One-time donation recorded:", donation);
 
         if(["Campaign"].includes(tyep)){

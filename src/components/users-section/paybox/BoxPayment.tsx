@@ -194,17 +194,17 @@ const BoxPayment = ({ box, phoneNumber, onBack, onPaymentComplete }: BoxPaymentP
           startLoading();
 
           // Update box payment status
-          const sresponse = await fetch(`/api/boxes/${box.id}/pay`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-            },
-            body: JSON.stringify({ paymentDate: new Date(), amount: customAmount }),
-          });
-          if (!sresponse.ok) throw new Error("Payment update failed");
-          const updatedBox = await sresponse.json();
-          setBoxData(updatedBox.box); // Update UI
+          // const sresponse = await fetch(`/api/boxes/${box.id}/pay`, {
+          //   method: "POST",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          //   },
+          //   body: JSON.stringify({ paymentDate: new Date(), amount: customAmount }),
+          // });
+          // if (!sresponse.ok) throw new Error("Payment update failed");
+          // const updatedBox = await sresponse.json();
+          // setBoxData(updatedBox.box); // Update UI
 
           stopLoading();
           router.push(
