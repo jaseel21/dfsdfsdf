@@ -247,7 +247,7 @@ export async function POST(req) {
 
         await donation.save();
 
- if(["Box"].includes(tyep)){
+ if(["Box"].includes(type)){
 
     await fetch(`${process.env.API_BASE_URL}/api/boxes/${boxId}/pay`, {
       method: "POST",
@@ -260,7 +260,7 @@ export async function POST(req) {
  }
         console.log("One-time donation recorded:", donation);
 
-        if(["Campaign"].includes(tyep)){
+        if(["Campaign"].includes(type)){
            await fetch(`${process.env.API_BASE_URL}/api/campaigns/${campaignId}/update-amount`, {
               method: "PATCH",
               headers: {
