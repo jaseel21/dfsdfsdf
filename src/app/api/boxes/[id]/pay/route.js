@@ -27,6 +27,7 @@ export async function POST(req, { params }) {
     await box.save();
 
     // const period = getPaymentStatus(box.lastPayment).period;
+    
     const holderName = box.name;
 
     const now = new Date();

@@ -249,13 +249,13 @@ export async function POST(req) {
 
  if(["Box"].includes(tyep)){
 
-   const sresponse = await fetch(`${process.env.API_BASE_URL}/api/boxes/${box.id}/pay`, {
+    await fetch(`${process.env.API_BASE_URL}/api/boxes/${boxId}/pay`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
       },
-      body: JSON.stringify({ paymentDate: new Date(), amount: customAmount }),
+      body: JSON.stringify({ paymentDate: new Date(), amount:amount }),
     });
  }
         console.log("One-time donation recorded:", donation);
@@ -267,7 +267,7 @@ export async function POST(req) {
                 "Content-Type": "application/json",
                 'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
               },
-              body: JSON.stringify({ amount: form.amount }),
+              body: JSON.stringify({ amount:amount }),
             });
         }
 
