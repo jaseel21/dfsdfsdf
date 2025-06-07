@@ -9,6 +9,8 @@ const razorpay = new Razorpay({
 export async function POST(req) {
   try {
     const {
+      donorId,
+      subscriptionId,
       amount,
       campaignId,
       type,
@@ -56,39 +58,77 @@ export async function POST(req) {
     // }
 
 
+    if(!type==="Subscription-charge"){
 
-    const orderOptions = {
-      amount, // Already in paise from frontend
-      currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-      notes: {
-        type,
-        fullName: name || "Anonymous",
-        phone,
-        emailAddress:email,
-        district,
-        panchayat,
-        message,
-        boxId,
-        instituteId,
-        campaignId,
-        razorpaySubscriptionId,
-        planId,
-        period:period || "null"
-      },
-    };
+      const orderOptions = {
+        amount, // Already in paise from frontend
+        currency: "INR",
+        receipt: `receipt_${Date.now()}`,
+        notes: {
+          type,
+          fullName: name || "Anonymous",
+          phone,
+          emailAddress:email,
+          district,
+          panchayat,
+          message,
+          boxId,
+          instituteId,
+          campaignId,
+          razorpaySubscriptionId,
+          planId,
+          period:period || "null"
+        },
+      };
+  
+      const order = await razorpay.orders.create(orderOptions);
+      console.log("order created")
+      
+  
+      return NextResponse.json(
+        {
+          orderId: order.id,
+          campaignId,
+        },
+        { status: 200 }
+      );
+    }else{
+      const orderOptions = {
+        amount, // Already in paise from frontend
+        currency: "INR",
+        receipt: `receipt_${Date.now()}`,
+        notes: {
+          donorId:donorId,
+          subscriptionID:subscriptionId,
+          type,
+          fullName: name || "Anonymous",
+          phone,
+          emailAddress:email,
+          district,
+          panchayat,
+          message,
+          boxId,
+          instituteId,
+          campaignId,
+          razorpaySubscriptionId,
+          planId,
+          period:period || "null"
+        },
+      };
 
-    const order = await razorpay.orders.create(orderOptions);
-    console.log("order created")
-    
+       const order = await razorpay.orders.create(orderOptions);
+      console.log("order created")
+      
+  
+      return NextResponse.json(
+        {
+          orderId: order.id,
+          campaignId,
+        },
+        { status: 200 }
+      );
+    }
 
-    return NextResponse.json(
-      {
-        orderId: order.id,
-        campaignId,
-      },
-      { status: 200 }
-    );
   } catch (error) {
     console.error("Error creating Razorpay order:", error);
     return NextResponse.json(

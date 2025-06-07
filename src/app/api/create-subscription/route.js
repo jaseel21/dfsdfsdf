@@ -14,6 +14,9 @@ export async function POST(req) {
     await connectDB();
     const { planId,period ,phone,amount,name,district,panchayat,email} = await req.json();
 
+    console.log("panchayath",panchayat);
+    
+
 
     if ( !planId) {
       return NextResponse.json({ error: "Missing userId or planId" }, { status: 400 });

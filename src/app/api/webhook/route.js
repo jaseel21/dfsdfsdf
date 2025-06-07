@@ -422,7 +422,7 @@ export async function POST(req) {
             console.error("Twilio error for Subscription-auto donation:", twilioError.message);
           }
         }
-      } else if (type === "Subscription-charge") {
+      } else if (type==="Subscription-charge") {
          const newDonation = await Sdonation.create({
           donorId: donorId,
           subscriptionId: subscriptionID,
@@ -430,7 +430,7 @@ export async function POST(req) {
           name: fullName || "Anonymous",
           amount,
           email: emailAddress,
-          type: type || "General",
+          type: "Subscription",
           period,
           district,
           panchayat,
@@ -441,6 +441,15 @@ export async function POST(req) {
         });
          await newDonation.save();
         console.log("Sdonation created:", newDonation);
+
+        const updatedSubscription = await Subscription.findOneAndUpdate(
+      { _id: subscriptionID }, // Match by subscriptionId
+      { $set: { lastPaymentAt: new Date() } }, // Set lastPaymentAt to current date
+      { new: true, runValidators: true } // Return updated document, validate schema
+    );
+
+
+
 
       }
     }

@@ -645,6 +645,7 @@ export default function SubscriptionPage() {
   };
 
   const handleMakePayment = async (subscription) => {
+ 
     startLoading();
     setIsLoading(true);
 
@@ -689,6 +690,9 @@ export default function SubscriptionPage() {
 
       // const [district, panchayat] = formData.location.split(", ").map((part) => part.trim());
 
+
+     
+      
       const orderResponse = await fetch("/api/donations/create-order", {
         method: "POST",
         headers: {
@@ -739,17 +743,8 @@ export default function SubscriptionPage() {
         order_id: orderData.orderId,
         handler: async (response) => {
           const subscriptionData = {
-            donorId: subscriptionData.donorId,
-            subscriptionId: subscriptionData._id,
-            name: subscriptionData.name,
-            email: subscriptionData.email,
-            phone: subscriptionData.phone,
-            amount: parseFloat(subscriptionData.amount),
-            period: subscriptionData.period,
-            type: subscriptionData.type,
-            district: subscriptionData.district,
-            method: "manual",
-            panchayat: subscriptionData.panchayat,
+           
+          
             razorpayPaymentId: response.razorpay_payment_id,
             razorpayOrderId: response.razorpay_order_id,
             razorpaySignature: response.razorpay_signature,
@@ -773,9 +768,9 @@ export default function SubscriptionPage() {
         
             stopLoading();
             router.push(
-              `/subscription/success?subscriptionId=${"no Id found"}&amount=${formData.amount}&name=${encodeURIComponent(
-                formData.fullName
-              )}&phone=${phoneNumber}&type=General&district=${district}&panchayat=${panchayat || ""}&paymentId=${
+              `/subscription/success?subscriptionId=${"no Id found"}&amount=${subscriptionData.amount}&name=${encodeURIComponent(
+                subscriptionData.fullName
+              )}&phone=${phoneNumber}&type=General&district=${subscriptionData.district}&panchayat=${subscriptionData.panchayat || ""}&paymentId=${
                 response.razorpay_payment_id
               }&orderId=${response.razorpay_order_id}`
             );
