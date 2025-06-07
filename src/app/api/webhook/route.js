@@ -158,7 +158,7 @@ export async function POST(req) {
       await autoDonation.save();
       console.log("Recurring donation recorded:", autoDonation);
 
-      const updatedSubscription = await Subscription.findByIdAndUpdate(
+       await Subscription.findByIdAndUpdate(
         subscription._id,
         {
           createdAt: new Date(),
@@ -167,7 +167,7 @@ export async function POST(req) {
         },
         { new: true }
       );
-      console.log("Subscription Updated:", updatedSubscription);
+     
 
       // Twilio notification
       const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
@@ -442,7 +442,7 @@ export async function POST(req) {
          await newDonation.save();
         console.log("Sdonation created:", newDonation);
 
-        const updatedSubscription = await Subscription.findOneAndUpdate(
+        await Subscription.findOneAndUpdate(
       { _id: subscriptionID }, // Match by subscriptionId
       { $set: { lastPaymentAt: new Date() } }, // Set lastPaymentAt to current date
       { new: true, runValidators: true } // Return updated document, validate schema
