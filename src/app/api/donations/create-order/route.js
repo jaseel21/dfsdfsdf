@@ -27,31 +27,31 @@ export async function POST(req) {
       period,
     } = await req.json();
 
-    console.log(email,name,phone,"eeeeeeeeeeeeeeeeemail");
+    console.log(email,name,phone,type,"eeeeeeeeeeeeeeeeemail");
     
 
     // Validate amount (required in all cases)
     if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid amount" }, { status: 407 });
     }
 
     // Validate donationType (required)
     if (!type || typeof type !== "string") {
-      return NextResponse.json({ error: "Invalid donation type" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid donation type" }, { status: 406 });
     }
 
     // Optional validations
     if (campaignId && typeof campaignId !== "string") {
-      return NextResponse.json({ error: "Invalid campaign ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid campaign ID" }, { status: 402 });
     }
     if (boxId && typeof boxId !== "string") {
-      return NextResponse.json({ error: "Invalid box ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid box ID" }, { status: 401 });
     }
     if (instituteId && typeof instituteId !== "string") {
-      return NextResponse.json({ error: "Invalid institute ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid institute ID" }, { status: 405 });
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid email format" }, { status: 401 });
     }
     // if (phone && !/^[0-9]{10}$/.test(phone)) {
     //   return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
