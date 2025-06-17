@@ -134,7 +134,7 @@ export async function POST(req) {
       const standardizedPhone = standardizePhoneNumber(subscription.phone);
       if (!standardizedPhone) {
         console.error("Invalid phone number for subscription.charged:", subscription.phone);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
       }
 
       const autoDonation = new AutoDonation({
@@ -221,7 +221,7 @@ export async function POST(req) {
       const standardizedPhone = standardizePhoneNumber(phone || payment.contact);
       if (!standardizedPhone && type === "Subscription") {
         console.error("Invalid phone number for payment.captured:", phone || payment.contact);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 403 });
       }
 
       // Handle different payment types
