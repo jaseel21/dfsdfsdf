@@ -221,6 +221,7 @@ export async function POST(req) {
 
       // Standardize phone number
       const standardizedPhone = standardizePhoneNumber(phone || payment.contact);
+      const standardizedPhoneNumber =standardizePhoneNumber(phoneNumber);
       if (!standardizedPhone && type === "Subscription") {
         console.error("Invalid phone number for payment.captured:", phone || payment.contact);
         return NextResponse.json({ error: "Invalid phone number" }, { status: 403 });
@@ -237,7 +238,7 @@ export async function POST(req) {
           instituteId: instituteId || "null",
           boxId: boxId || "null",
           name: fullName || "null",
-          phone: standardizedPhone || phoneNumber,
+          phone: standardizedPhone || standardizedPhoneNumber,
           email: emailAddress || email || null,
           district: district || null,
           panchayat: panchayat || null,
