@@ -59,6 +59,7 @@ export async function POST(req) {
       type,
       name,
       phone,
+      phoneNumber,
       email,
       district,
       panchayat,
@@ -93,6 +94,7 @@ export async function POST(req) {
 
     // Standardize phone number
     const standardizedPhone = standardizePhoneNumber(phone);
+    const standardizedPhoneNumber =standardizePhoneNumber(phoneNumber);
 
     // Convert amount to paise
     const amountInPaise = Math.round(amount);
@@ -107,7 +109,7 @@ export async function POST(req) {
         donorId:donorId,
         subscriptionID:subscriptionId,
         type: type || "General",
-        phoneNumber: standardizedPhone,
+        phoneNumber: standardizedPhone || standardizedPhoneNumber,
         email: email || "",
         period:period,
         district: district || "",
