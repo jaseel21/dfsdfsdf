@@ -71,6 +71,8 @@ export async function POST(req) {
       callbackUrl
     } = body;
 
+    const updatedEmail = (email === '' || email === 'N/A') ? 'example@gmail.com' : email
+
     // Validate required fields
     const missingFields = [];
     if (!amount && amount !== 0) missingFields.push("amount");
@@ -109,8 +111,8 @@ export async function POST(req) {
         donorId:donorId,
         subscriptionID:subscriptionId,
         type: type || "General",
-        phoneNumber: standardizedPhone || standardizedPhoneNumber,
-        email: email || "",
+        phone: standardizedPhone || standardizedPhoneNumber,
+        email: updatedEmail || "",
         period:period,
         district: district || "",
         panchayat: panchayat || "",
@@ -120,6 +122,8 @@ export async function POST(req) {
         campaignId: campaignId || null,
       },
     };
+
+    
 
     console.log("Order data:", orderData);
     let orderResponse;
