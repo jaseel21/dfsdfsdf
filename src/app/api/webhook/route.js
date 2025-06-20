@@ -51,7 +51,7 @@ export async function POST(req) {
     }
 
 
-    if (event.event === "subscription.completed") {
+    if (event.event === "subscription.activated") {
 
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
