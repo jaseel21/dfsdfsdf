@@ -33,6 +33,7 @@ export async function POST(req) {
           callbackUrl
         } = body;
 
+console.log(body);
 
         function standardizePhoneNumber(phone, defaultCountryCode = "+91") {
   if (!phone) return ""; 

@@ -30,6 +30,7 @@ export async function POST(req) {
 
     // Connect to database
     await connectToDatabase();
+    
 
     // Validate Content-Type
     if (req.headers.get("content-type") !== "application/json") {
@@ -40,6 +41,8 @@ export async function POST(req) {
     let body;
     try {
       body = await req.json();
+          console.log("reqqqbody",body);
+
     } catch (error) {
       console.error("Body parsing error:", error);
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
@@ -51,9 +54,12 @@ export async function POST(req) {
     // Destructure body
     const {
       amount,
+      donorId,
+      subscriptionId,
       type,
       name,
       phone,
+      phoneNumber,
       email,
       district,
       panchayat,
@@ -64,6 +70,8 @@ export async function POST(req) {
       campaignId = null,
       callbackUrl
     } = body;
+
+    const updatedEmail = (email === '' || email === 'N/A') ? 'example@gmail.com' : email
 
     // Validate required fields
     const missingFields = [];
@@ -88,6 +96,7 @@ export async function POST(req) {
 
     // Standardize phone number
     const standardizedPhone = standardizePhoneNumber(phone);
+    const standardizedPhoneNumber =standardizePhoneNumber(phoneNumber);
 
     // Convert amount to paise
     const amountInPaise = Math.round(amount);
@@ -99,9 +108,11 @@ export async function POST(req) {
       receipt: `receipt_${Date.now()}`,
       notes: {
         fullName: name || "Anonymous",
+        donorId:donorId,
+        subscriptionID:subscriptionId,
         type: type || "General",
-        phoneNumber: standardizedPhone,
-        email: email || "",
+        phone: standardizedPhone || standardizedPhoneNumber,
+        email: updatedEmail || "",
         period:period,
         district: district || "",
         panchayat: panchayat || "",
@@ -111,6 +122,8 @@ export async function POST(req) {
         campaignId: campaignId || null,
       },
     };
+
+    
 
     console.log("Order data:", orderData);
     let orderResponse;
