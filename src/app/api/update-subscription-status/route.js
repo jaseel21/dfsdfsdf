@@ -27,73 +27,65 @@ export async function POST(req) {
     //   return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     // }
 
-    const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId });
+    // const subscription = await Subscription.findOne({ razorpaySubscriptionId });
+    // if (!subscription) {
+    //   return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
+    // }
 
-    if (existingSubscription) {
-      // Update the existing subscription with new info
-      existingSubscription.status = status;
-      existingSubscription.method = method;
-      existingSubscription.razorpay_payment_id = razorpay_payment_id;
-      // ... update any other fields as needed ...
-      await existingSubscription.save();
-      return NextResponse.json({ message: "Subscription updated", updated: true });
-    } else {
-      // Create new subscription as before
-      const subscription = new Subscription({
-        donorId:donor._id,
-        razorpaySubscriptionId,
-        planId,
-        name:donor.name,
-        amount,
-        district,
-        panchayat,
-        period,
-        email,
-        phone:"+91"+phoneNumber,
-        interval:1,
-        planId,
-        status,
-        method,
-      });
-      await subscription.save();
-      console.log("Subscription saved to DB:", subscription);
+    const subscription = new Subscription({
+      donorId:donor._id,
+      razorpaySubscriptionId,
+      planId,
+      name:donor.name,
+      amount,
+      district,
+      panchayat,
+      period,
+      email,
+      phone:"+91"+phoneNumber,
+      interval:1,
+      planId,
+      status,
+      method,
+    });
+    await subscription.save();
+    console.log("Subscription saved to DB:", subscription);
 
-      const donation = new Donation({
-        donorId:donor._id,
-        razorpaySubscriptionId,
-        name: subscription.name || "Anonymous", // Fallback if name isn't stored in Subscription
-        phone: phone,
-        amount: subscription.amount,
-        period: subscription.period,
-        district:subscription.district,
-        panchayat:subscription.panchayat,
-        planId:subscription.planId,
-        email,
-        razorpayPaymentId: razorpay_payment_id,
-        status:"Completed",
-        method:"auto",
-        paymentStatus: "paid",
-        subscriptionId:subscription._id,
-      });
-      await donation.save();
-      console.log("Initial donation recorded:", donation);
+    const donation = new Donation({
+      donorId:donor._id,
+      razorpaySubscriptionId,
+      name: subscription.name || "Anonymous", // Fallback if name isn’t stored in Subscription
+      phone: phone,
+      amount: subscription.amount,
+      period: subscription.period,
+      district:subscription.district,
+      panchayat:subscription.panchayat,
+      planId:subscription.planId,
+      email,
+      razorpayPaymentId: razorpay_payment_id,
+      status:"Completed",
+      method:"auto",
+      paymentStatus: "paid",
+      subscriptionId:subscription._id,
+    });
+    await donation.save();
+    console.log("Initial donation recorded:", donation);
 
-      // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-      // // const toNumber = subscription.phoneNumber.startsWith("+")
-      //    const toNumber = `whatsapp:${subscription.phoneNumber}`
-      //   // : `whatsapp:+91${subscription.phoneNumber}`;
-      // try {
-      //   await twilioClient.messages.create({
-      //     body: `Thank you! Your ${subscription.period} donation subscription is now active. Amount: ₹${subscription.amount}. Autopay enabled.`,
-      //     from: process.env.TWILIO_WHATSAPP_NUMBER,
-      //     to: toNumber,
-      //   });
-      // } catch (twilioError) {
-      //   console.error("Twilio error:", twilioError.message);
-      // }
+    // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+    // // const toNumber = subscription.phoneNumber.startsWith("+")
+    //    const toNumber = `whatsapp:${subscription.phoneNumber}`
+    //   // : `whatsapp:+91${subscription.phoneNumber}`;
+    // try {
+    //   await twilioClient.messages.create({
+    //     body: `Thank you! Your ${subscription.period} donation subscription is now active. Amount: ₹${subscription.amount}. Autopay enabled.`,
+    //     from: process.env.TWILIO_WHATSAPP_NUMBER,
+    //     to: toNumber,
+    //   });
+    // } catch (twilioError) {
+    //   console.error("Twilio error:", twilioError.message);
+    // }
 
-      return NextResponse.json({ message: "Subscription activated and donation recorded" });
-    }
+    return NextResponse.json({ message: "Subscription activated and donation recorded" });
   } catch (error) {
     console.error("Update subscription status error:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });

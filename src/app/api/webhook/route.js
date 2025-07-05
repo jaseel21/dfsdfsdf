@@ -134,7 +134,7 @@ export async function POST(req) {
       const standardizedPhone = standardizePhoneNumber(subscription.phone);
       if (!standardizedPhone) {
         console.error("Invalid phone number for subscription.charged:", subscription.phone);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
       }
 
       const autoDonation = new AutoDonation({
@@ -204,10 +204,12 @@ export async function POST(req) {
         subscriptionID,
         fullName,
         phone,
+        phoneNumber,
         type,
         district,
         panchayat,
         emailAddress,
+        email,
         message,
         campaignId,
         instituteId,
@@ -219,9 +221,10 @@ export async function POST(req) {
 
       // Standardize phone number
       const standardizedPhone = standardizePhoneNumber(phone || payment.contact);
+      const standardizedPhoneNumber =standardizePhoneNumber(phoneNumber);
       if (!standardizedPhone && type === "Subscription") {
         console.error("Invalid phone number for payment.captured:", phone || payment.contact);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 403 });
       }
 
       // Handle different payment types
@@ -235,8 +238,8 @@ export async function POST(req) {
           instituteId: instituteId || "null",
           boxId: boxId || "null",
           name: fullName || "null",
-          phone: standardizedPhone || null,
-          email: emailAddress || payment.email || null,
+          phone: standardizedPhone || standardizedPhoneNumber,
+          email: emailAddress || email || null,
           district: district || null,
           panchayat: panchayat || null,
           message: message || null,
@@ -426,7 +429,7 @@ export async function POST(req) {
          const newDonation = await Sdonation.create({
           donorId: donorId,
           subscriptionId: subscriptionID,
-          phone: standardizedPhone,
+          phoneNumber : standardizedPhone,
           name: fullName || "Anonymous",
           amount,
           email: emailAddress,
