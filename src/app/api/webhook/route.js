@@ -429,7 +429,7 @@ export async function POST(req) {
          const newDonation = await Sdonation.create({
           donorId: donorId,
           subscriptionId: subscriptionID,
-          phoneNumber : standardizedPhone,
+          phone : standardizedPhone,
           name: fullName || "Anonymous",
           amount,
           email: emailAddress,
