@@ -9,7 +9,7 @@ import Donor from "../../../models/Donor"
 export async function POST(req) {
   try {
     await connectDB();
-    const { razorpaySubscriptionId,planId,name,method,amount,period,district,razorpay_payment_id,panchayat,email ,status,phoneNumber } = await req.json();
+    const { razorpaySubscriptionId,planId,name,method,amount,period,district,panchayat,email ,status,phoneNumber } = await req.json();
     
     let phone = "+91" + phoneNumber; 
 
