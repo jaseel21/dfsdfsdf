@@ -1,6 +1,5 @@
 import connectDB from "../../../lib/db";
 import Subscription from "../../../models/AutoSubscription";
-import Donation from "../../../models/AutoDonation";
 import { NextResponse } from "next/server";
 import Donor from "../../../models/Donor"
 // import twilio from "twilio";
