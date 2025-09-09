@@ -59,7 +59,6 @@ export async function POST(req) {
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
-      const paymentId = payment.payment_id || payment.id || "";
 
       // Convert Unix timestamp to ISO string if available
       const subscriptionStartDate = startAt
