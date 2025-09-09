@@ -56,74 +56,46 @@ export async function POST(req) {
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
       const startAt = subscriptionData.start_at;
-    
-      // Safely extract or set defaults
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
       const paymentId = payment.payment_id || payment.id || "";
-    
+
       // Convert Unix timestamp to ISO string if available
       const subscriptionStartDate = startAt
         ? new Date(startAt * 1000).toISOString()
         : null;
-    
-      const {
-       
-        amount,
-        period,
-        district,
-        panchayat,
-        email,
-        type,
-        planId,
-      } = notes;
-    
+
       const subscriptionDetails = {
         razorpaySubscriptionId: subscriptionId,
         name: fullName,
-        amount,
+        amount: notes.amount,
         phoneNumber: standardizedPhone,
-        district: district || "",
-        type: type || "General",
+        district: notes.district || "",
+        type: notes.type || "General",
         method: "auto",
-        planId,
-        email: email || payment.email || "",
-        panchayat: panchayat || "",
-        period,
+        planId: notes.planId,
+        email: notes.email || payment.email || "",
+        panchayat: notes.panchayat || "",
+        period: notes.period,
         razorpayOrderId: payment.order_id || "",
-        razorpay_payment_id: paymentId,
-        subscriptionStartDate, // added the new field here
+        // Do NOT set razorpay_payment_id here
+        subscriptionStartDate,
         status: "active",
       };
-    
+
       // Check for existing subscription before creating
-      const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (existingSubscription) {
+      let existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      if (!existingSubscription) {
+        // Create subscription WITHOUT paymentId
+        existingSubscription = await Subscription.create(subscriptionDetails);
+        console.log("Subscription created (activated):", existingSubscription);
+      } else {
         console.log("Duplicate subscription found:", subscriptionId);
-        // Optionally update fields if needed, or just return
-        return NextResponse.json({ received: true });
       }
 
-      try {
-        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-          },
-          body: JSON.stringify(subscriptionDetails),
-        });
-    
-        const apiData = await apiResponse.json();
-        if (!apiResponse.ok) {
-          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
-        } else {
-          console.log("Subscription status updated successfully:", apiData);
-        }
-      } catch (apiError) {
-        console.error("Error calling /api/update-subscription-status:", apiError.message);
-      }
+      // Do NOT create donation here
+      return NextResponse.json({ received: true });
     }
     
 
@@ -133,22 +105,23 @@ export async function POST(req) {
       const paymentId = event.payload.payment.entity.id;
       const amount = event.payload.payment.entity.amount / 100;
 
-      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      // Find and update subscription with paymentId
+      const subscription = await Subscription.findOneAndUpdate(
+        { razorpaySubscriptionId: subscriptionId },
+        { razorpay_payment_id: paymentId, lastPaymentAt: new Date() },
+        { new: true }
+      );
+
       if (!subscription || subscription.status !== "active") {
         return NextResponse.json({ received: true });
       }
 
-      const standardizedPhone = standardizePhoneNumber(subscription.phone);
-      if (!standardizedPhone) {
-        console.error("Invalid phone number for subscription.charged:", subscription.phone);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
-      }
-
+      // Create donation record with paymentId
       const autoDonation = new AutoDonation({
         donorId: subscription.donorId,
         razorpaySubscriptionId: subscriptionId,
         name: subscription.name || "Anonymous",
-        phone: standardizedPhone,
+        phone: standardizePhoneNumber(subscription.phone),
         amount: subscription.amount,
         period: subscription.period,
         district: subscription.district,
