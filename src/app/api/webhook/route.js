@@ -55,7 +55,6 @@ export async function POST(req) {
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
-      const startAt = subscriptionData.start_at;
     
       // Safely extract or set defaults
       const fullName = notes.name || "Anonymous";
