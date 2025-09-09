@@ -55,10 +55,17 @@ export async function POST(req) {
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
-    
+
       // Safely extract or set defaults
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
+      const amount = notes.amount || subscriptionData.plan?.item?.amount || 0;
+      const district = notes.district || "";
+      const type = notes.type || "General";
+      const planId = subscriptionData.plan_id || "";
+      const email = notes.email || "";
+      const panchayat = notes.panchayat || "";
+      const period = notes.period || subscriptionData.period || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
       const paymentId = ""; // Always empty at this stage
 
@@ -68,18 +75,18 @@ export async function POST(req) {
         name: fullName,
         amount,
         phoneNumber: standardizedPhone,
-        district: district || "",
-        type: type || "General",
+        district,
+        type,
         method: "auto",
         planId,
         email: email || payment.email || "",
-        panchayat: panchayat || "",
+        panchayat,
         period,
         razorpayOrderId: payment.order_id || "",
         razorpayPaymentId: paymentId, // empty
         status: "active",
       };
-    
+
       // Save to DB if not exists
       const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (!existingSubscription) {
