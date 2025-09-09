@@ -59,6 +59,7 @@ export async function POST(req) {
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
+      const paymentId = payment.payment_id || payment.id || "";
 
       // Convert Unix timestamp to ISO string if available
       const subscriptionStartDate = startAt
@@ -78,6 +79,7 @@ export async function POST(req) {
         panchayat: notes.panchayat || "",
         period: notes.period,
         razorpayOrderId: payment.order_id || "",
+        razorpayPaymentId: paymentId,
         // Do NOT set razorpay_payment_id here
         subscriptionStartDate,
         status: "active",
