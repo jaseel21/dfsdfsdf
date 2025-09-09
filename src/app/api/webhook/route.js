@@ -52,7 +52,6 @@ export async function POST(req) {
 
 
     if (event.event === "subscription.activated") {
-
       const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
@@ -98,6 +97,14 @@ export async function POST(req) {
         status: "active",
       };
     
+      // Check for existing subscription before creating
+      const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      if (existingSubscription) {
+        console.log("Duplicate subscription found:", subscriptionId);
+        // Optionally update fields if needed, or just return
+        return NextResponse.json({ received: true });
+      }
+
       try {
         const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
           method: "POST",
