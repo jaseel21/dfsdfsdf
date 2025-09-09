@@ -52,22 +52,33 @@ export async function POST(req) {
 
 
     if (event.event === "subscription.activated") {
-      const subscriptionData = event.payload.subscription.entity;
+    
+        const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
+      const startAt = subscriptionData.start_at;
 
-      // Safely extract or set defaults
-      const fullName = notes.name || "Anonymous";
+
+       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
-      const amount = notes.amount || subscriptionData.plan?.item?.amount || 0;
-      const district = notes.district || "";
-      const type = notes.type || "General";
-      const planId = subscriptionData.plan_id || "";
-      const email = notes.email || "";
-      const panchayat = notes.panchayat || "";
-      const period = notes.period || subscriptionData.period || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
-      const paymentId = ""; // Always empty at this stage
+      const paymentId =  "";
+
+      const subscriptionStartDate = startAt
+        ? new Date(startAt * 1000).toISOString()
+        : null;
+      // Safely extract or set defaults
+     
+      const {
+        amount,
+        period,
+        district,
+        panchayat,
+        email,
+        type,
+        planId,
+      } = notes;
+    
 
       // Save subscription without paymentId
       const subscriptionDetails = {
@@ -75,18 +86,39 @@ export async function POST(req) {
         name: fullName,
         amount,
         phoneNumber: standardizedPhone,
-        district,
-        type,
+        district: district || "",
+        type: type || "General",
         method: "auto",
         planId,
         email: email || payment.email || "",
-        panchayat,
+        panchayat: panchayat || "",
         period,
         razorpayOrderId: payment.order_id || "",
-        razorpayPaymentId: paymentId, // empty
+        razorpay_payment_id: paymentId,
+        subscriptionStartDate,
         status: "active",
       };
 
+      try {
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+          body: JSON.stringify(subscriptionDetails),
+        });
+    
+        const apiData = await apiResponse.json();
+        if (!apiResponse.ok) {
+          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
+        } else {
+          console.log("Subscription status updated successfully:", apiData);
+        }
+      } catch (apiError) {
+        console.error("Error calling /api/update-subscription-status:", apiError.message);
+      }
+      
       // Save to DB if not exists
       const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (!existingSubscription) {
