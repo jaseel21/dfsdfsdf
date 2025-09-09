@@ -120,9 +120,46 @@ export async function POST(req) {
       }
       
       // Save to DB if not exists
-      const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      let existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (!existingSubscription) {
-        await Subscription.create(subscriptionDetails);
+        existingSubscription = await Subscription.create(subscriptionDetails);
+      }
+
+      // Ensure initial AutoDonation exists without paymentId (idempotent)
+      try {
+        const pendingAutoDonation = await AutoDonation.findOne({
+          razorpaySubscriptionId: subscriptionId,
+          $or: [
+            { razorpayPaymentId: { $exists: false } },
+            { razorpayPaymentId: null },
+            { razorpayPaymentId: "" },
+          ],
+        });
+
+        if (!pendingAutoDonation) {
+          const autoDonation = new AutoDonation({
+            donorId: existingSubscription?.donorId || null,
+            razorpaySubscriptionId: subscriptionId,
+            name: fullName || "Anonymous",
+            phone: standardizePhoneNumber(standardizedPhone),
+            amount: amount,
+            period: period,
+            district: district || "",
+            panchayat: panchayat || "",
+            planId: planId,
+            email: email || payment.email || "",
+            razorpayPaymentId: "",
+            status: "Completed",
+            method: "auto",
+            paymentStatus: "paid",
+            subscriptionId: existingSubscription?._id || null,
+            type: type || "General",
+            paymentDate: new Date(),
+          });
+          await autoDonation.save();
+        }
+      } catch (autoDonationError) {
+        console.error("Error ensuring initial AutoDonation:", autoDonationError.message);
       }
       // ...existing code...
     }
@@ -137,28 +174,63 @@ export async function POST(req) {
         { razorpay_payment_id: paymentId, lastPaymentAt: new Date() }
       );
 
-      // Create AutoDonation record with paymentId
+      // Prefer updating an existing pending AutoDonation, else create new
       const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
       if (subscription && subscription.status === "active") {
-        const autoDonation = new AutoDonation({
-          donorId: subscription.donorId,
-          razorpaySubscriptionId: subscriptionId,
-          name: subscription.name || "Anonymous",
-          phone: standardizePhoneNumber(subscription.phone),
-          amount: subscription.amount,
-          period: subscription.period,
-          district: subscription.district,
-          panchayat: subscription.panchayat,
-          planId: subscription.planId,
-          email: subscription.email,
-          razorpayPaymentId: paymentId,
-          status: "Completed",
-          method: "auto",
-          paymentStatus: "paid",
-          subscriptionId: subscription._id,
-          type: subscription.type || "General",
-        });
-        await autoDonation.save();
+        const updated = await AutoDonation.findOneAndUpdate(
+          {
+            razorpaySubscriptionId: subscriptionId,
+            $or: [
+              { razorpayPaymentId: { $exists: false } },
+              { razorpayPaymentId: null },
+              { razorpayPaymentId: "" },
+            ],
+          },
+          {
+            $set: {
+              donorId: subscription.donorId,
+              name: subscription.name || "Anonymous",
+              phone: standardizePhoneNumber(subscription.phoneNumber || subscription.phone),
+              amount: subscription.amount,
+              period: subscription.period,
+              district: subscription.district,
+              panchayat: subscription.panchayat,
+              planId: subscription.planId,
+              email: subscription.email,
+              razorpayPaymentId: paymentId,
+              status: "Completed",
+              method: "auto",
+              paymentStatus: "paid",
+              subscriptionId: subscription._id,
+              type: subscription.type || "General",
+              paymentDate: new Date(),
+            },
+          },
+          { new: true }
+        );
+
+        if (!updated) {
+          const autoDonation = new AutoDonation({
+            donorId: subscription.donorId,
+            razorpaySubscriptionId: subscriptionId,
+            name: subscription.name || "Anonymous",
+            phone: standardizePhoneNumber(subscription.phoneNumber || subscription.phone),
+            amount: subscription.amount,
+            period: subscription.period,
+            district: subscription.district,
+            panchayat: subscription.panchayat,
+            planId: subscription.planId,
+            email: subscription.email,
+            razorpayPaymentId: paymentId,
+            status: "Completed",
+            method: "auto",
+            paymentStatus: "paid",
+            subscriptionId: subscription._id,
+            type: subscription.type || "General",
+            paymentDate: new Date(),
+          });
+          await autoDonation.save();
+        }
       }
       // ...existing code...
     }
