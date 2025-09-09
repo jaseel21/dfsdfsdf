@@ -76,8 +76,7 @@ export async function POST(req) {
         panchayat: panchayat || "",
         period,
         razorpayOrderId: payment.order_id || "",
-        razorpay_payment_id: paymentId, // empty
-        subscriptionStartDate,
+        razorpayPaymentId: paymentId, // empty
         status: "active",
       };
     
