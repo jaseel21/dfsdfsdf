@@ -61,24 +61,9 @@ export async function POST(req) {
       const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
-      const paymentId = payment.payment_id || payment.id || "";
-    
-      // Convert Unix timestamp to ISO string if available
-      const subscriptionStartDate = startAt
-        ? new Date(startAt * 1000).toISOString()
-        : null;
-    
-      const {
-       
-        amount,
-        period,
-        district,
-        panchayat,
-        email,
-        type,
-        planId,
-      } = notes;
-    
+      const paymentId = ""; // Always empty at this stage
+
+      // Save subscription without paymentId
       const subscriptionDetails = {
         razorpaySubscriptionId: subscriptionId,
         name: fullName,
@@ -92,104 +77,53 @@ export async function POST(req) {
         panchayat: panchayat || "",
         period,
         razorpayOrderId: payment.order_id || "",
-        razorpay_payment_id: paymentId,
-        subscriptionStartDate, // added the new field here
+        razorpay_payment_id: paymentId, // empty
+        subscriptionStartDate,
         status: "active",
       };
     
-      // Check for existing subscription before creating
+      // Save to DB if not exists
       const existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (existingSubscription) {
-        console.log("Duplicate subscription found:", subscriptionId);
-        // Optionally update fields if needed, or just return
-        return NextResponse.json({ received: true });
+      if (!existingSubscription) {
+        await Subscription.create(subscriptionDetails);
       }
-
-      try {
-        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-          },
-          body: JSON.stringify(subscriptionDetails),
-        });
-    
-        const apiData = await apiResponse.json();
-        if (!apiResponse.ok) {
-          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
-        } else {
-          console.log("Subscription status updated successfully:", apiData);
-        }
-      } catch (apiError) {
-        console.error("Error calling /api/update-subscription-status:", apiError.message);
-      }
+      // ...existing code...
     }
-    
 
-    // Handle subscription.charged event
     if (event.event === "subscription.charged") {
       const subscriptionId = event.payload.subscription.entity.id;
       const paymentId = event.payload.payment.entity.id;
-      const amount = event.payload.payment.entity.amount / 100;
 
-      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (!subscription || subscription.status !== "active") {
-        return NextResponse.json({ received: true });
-      }
-
-      const standardizedPhone = standardizePhoneNumber(subscription.phone);
-      if (!standardizedPhone) {
-        console.error("Invalid phone number for subscription.charged:", subscription.phone);
-        return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
-      }
-
-      const autoDonation = new AutoDonation({
-        donorId: subscription.donorId,
-        razorpaySubscriptionId: subscriptionId,
-        name: subscription.name || "Anonymous",
-        phone: standardizedPhone,
-        amount: subscription.amount,
-        period: subscription.period,
-        district: subscription.district,
-        panchayat: subscription.panchayat,
-        planId: subscription.planId,
-        email: subscription.email,
-        razorpayPaymentId: paymentId,
-        status: "Completed",
-        method: "auto",
-        paymentStatus: "paid",
-        subscriptionId: subscription._id,
-        type: subscription.type || "General",
-      });
-      await autoDonation.save();
-      console.log("Recurring donation recorded:", autoDonation);
-
-       await Subscription.findByIdAndUpdate(
-        subscription._id,
-        {
-          createdAt: new Date(),
-          lastPaymentAt: new Date(),
-          phone: standardizedPhone, // Update phone number in subscription
-        },
-        { new: true }
+      // Update subscription with paymentId
+      await Subscription.findOneAndUpdate(
+        { razorpaySubscriptionId: subscriptionId },
+        { razorpay_payment_id: paymentId, lastPaymentAt: new Date() }
       );
-     
 
-      // Twilio notification
-      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
-      const toNumber = standardizedPhone.startsWith("+")
-        ? `whatsapp:${standardizedPhone}`
-        : `whatsapp:+91${standardizedPhone}`;
-      try {
-        await twilioClient.messages.create({
-          body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
-          from: fromNumber,
-          to: toNumber,
+      // Create AutoDonation record with paymentId
+      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      if (subscription && subscription.status === "active") {
+        const autoDonation = new AutoDonation({
+          donorId: subscription.donorId,
+          razorpaySubscriptionId: subscriptionId,
+          name: subscription.name || "Anonymous",
+          phone: standardizePhoneNumber(subscription.phone),
+          amount: subscription.amount,
+          period: subscription.period,
+          district: subscription.district,
+          panchayat: subscription.panchayat,
+          planId: subscription.planId,
+          email: subscription.email,
+          razorpayPaymentId: paymentId,
+          status: "Completed",
+          method: "auto",
+          paymentStatus: "paid",
+          subscriptionId: subscription._id,
+          type: subscription.type || "General",
         });
-      } catch (twilioError) {
-        console.error("Twilio error:", twilioError.message);
+        await autoDonation.save();
       }
+      // ...existing code...
     }
 
     // Handle payment.captured event
