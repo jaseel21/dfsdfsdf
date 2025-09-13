@@ -9,57 +9,82 @@ import Donor from "../../../models/Donor"
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
-    const { razorpaySubscriptionId, planId, name, method = "auto", amount, period, district, panchayat, email, status = "active", phoneNumber, subscriptionStartDate } = body;
+    const { razorpaySubscriptionId,planId,name,method,amount,period,district,panchayat,email ,status,phoneNumber } = await req.json();
+    
+    let phone = "+91" + phoneNumber; 
 
-    if (!razorpaySubscriptionId || !planId || !amount || !period) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    const standardizePhone = (p) => {
-      if (!p) return null;
-      const cleaned = String(p).replace(/\D/g, "");
-      if (String(p).startsWith("+")) return p;
-      if (cleaned.length === 10) return `+91${cleaned}`;
-      return null;
-    };
-
-    const phone = standardizePhone(phoneNumber);
-    if (!phone) {
-      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
-    }
-
-    let donor = await Donor.findOne({ phone });
+       let donor = await Donor.findOne({ phone });
     if (!donor) {
-      donor = await Donor.create({ name: name || "Anonymous", phone, email, period });
+          console.log("Creating new donor...");
+          donor = await Donor.create({ name, phone,email,  period});
+   } else {
+          console.log("Donor already exists:", donor);
+          return NextResponse.json({ exist: true });
     }
+ 
+    // if (!razorpaySubscriptionId || !razorpay_payment_id || !status) {
+    //   return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // }
 
-    const update = {
-      donorId: donor._id,
-      planId,
+    // const subscription = await Subscription.findOne({ razorpaySubscriptionId });
+    // if (!subscription) {
+    //   return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
+    // }
+
+    const subscription = new Subscription({
+      donorId:donor._id,
       razorpaySubscriptionId,
-      name: name || donor.name || "Anonymous",
+      planId,
+      name:donor.name,
       amount,
-      district: district || null,
-      panchayat: panchayat || null,
+      district,
+      panchayat,
       period,
-      email: email || null,
-      phone,
+      email,
+      phone:"+91"+phoneNumber,
+      interval:1,
+      planId,
       status,
       method,
-    };
+    });
+    await subscription.save();
+    console.log("Subscription saved to DB:", subscription);
 
-    if (subscriptionStartDate) {
-      update.subscriptionStartDate = new Date(subscriptionStartDate);
-    }
+    const donation = new Donation({
+      donorId:donor._id,
+      razorpaySubscriptionId,
+      name: subscription.name || "Anonymous", // Fallback if name isn’t stored in Subscription
+      phone: phone,
+      amount: subscription.amount,
+      period: subscription.period,
+      district:subscription.district,
+      panchayat:subscription.panchayat,
+      planId:subscription.planId,
+      email,
+      razorpayPaymentId: razorpay_payment_id,
+      status:"Completed",
+      method:"auto",
+      paymentStatus: "paid",
+      subscriptionId:subscription._id,
+    });
+    await donation.save();
+    console.log("Initial donation recorded:", donation);
 
-    const subscription = await Subscription.findOneAndUpdate(
-      { razorpaySubscriptionId },
-      { $set: update, $setOnInsert: { createdAt: new Date() } },
-      { new: true, upsert: true }
-    );
+    // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+    // // const toNumber = subscription.phoneNumber.startsWith("+")
+    //    const toNumber = `whatsapp:${subscription.phoneNumber}`
+    //   // : `whatsapp:+91${subscription.phoneNumber}`;
+    // try {
+    //   await twilioClient.messages.create({
+    //     body: `Thank you! Your ${subscription.period} donation subscription is now active. Amount: ₹${subscription.amount}. Autopay enabled.`,
+    //     from: process.env.TWILIO_WHATSAPP_NUMBER,
+    //     to: toNumber,
+    //   });
+    // } catch (twilioError) {
+    //   console.error("Twilio error:", twilioError.message);
+    // }
 
-    return NextResponse.json({ message: "Subscription activated", subscriptionId: subscription._id });
+    return NextResponse.json({ message: "Subscription activated and donation recorded" });
   } catch (error) {
     console.error("Update subscription status error:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });

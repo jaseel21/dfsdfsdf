@@ -52,24 +52,25 @@ export async function POST(req) {
 
 
     if (event.event === "subscription.activated") {
-    
-        const subscriptionData = event.payload.subscription.entity;
+
+      const subscriptionData = event.payload.subscription.entity;
       const subscriptionId = subscriptionData.id;
       const notes = subscriptionData.notes || {};
       const startAt = subscriptionData.start_at;
-
-
-       const fullName = notes.name || "Anonymous";
+    
+      // Safely extract or set defaults
+      const fullName = notes.name || "Anonymous";
       const standardizedPhone = notes.phoneNumber || "";
       const payment = subscriptionData.latest_invoice?.payment || {};
-      const paymentId =  "";
-
+      const paymentId = payment.payment_id || payment.id || "";
+    
+      // Convert Unix timestamp to ISO string if available
       const subscriptionStartDate = startAt
         ? new Date(startAt * 1000).toISOString()
         : null;
-      // Safely extract or set defaults
-     
+    
       const {
+       
         amount,
         period,
         district,
@@ -79,8 +80,6 @@ export async function POST(req) {
         planId,
       } = notes;
     
-
-      // Save subscription without paymentId
       const subscriptionDetails = {
         razorpaySubscriptionId: subscriptionId,
         name: fullName,
@@ -95,10 +94,10 @@ export async function POST(req) {
         period,
         razorpayOrderId: payment.order_id || "",
         razorpay_payment_id: paymentId,
-        subscriptionStartDate,
+        subscriptionStartDate, // added the new field here
         status: "active",
       };
-
+    
       try {
         const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
           method: "POST",
@@ -118,124 +117,72 @@ export async function POST(req) {
       } catch (apiError) {
         console.error("Error calling /api/update-subscription-status:", apiError.message);
       }
-      
-      // Save to DB if not exists
-      let existingSubscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (!existingSubscription) {
-        existingSubscription = await Subscription.create(subscriptionDetails);
-      }
-
-      // Ensure initial AutoDonation exists without paymentId (idempotent)
-      try {
-        const pendingAutoDonation = await AutoDonation.findOne({
-          razorpaySubscriptionId: subscriptionId,
-          $or: [
-            { razorpayPaymentId: { $exists: false } },
-            { razorpayPaymentId: null },
-            { razorpayPaymentId: "" },
-          ],
-        });
-
-        if (!pendingAutoDonation) {
-          const autoDonation = new AutoDonation({
-            donorId: existingSubscription?.donorId || null,
-            razorpaySubscriptionId: subscriptionId,
-            name: fullName || "Anonymous",
-            phone: standardizePhoneNumber(standardizedPhone),
-            amount: amount,
-            period: period,
-            district: district || "",
-            panchayat: panchayat || "",
-            planId: planId,
-            email: email || payment.email || "",
-            razorpayPaymentId: "",
-            status: "Completed",
-            method: "auto",
-            paymentStatus: "paid",
-            subscriptionId: existingSubscription?._id || null,
-            type: type || "General",
-            paymentDate: new Date(),
-          });
-          await autoDonation.save();
-        }
-      } catch (autoDonationError) {
-        console.error("Error ensuring initial AutoDonation:", autoDonationError.message);
-      }
-      // ...existing code...
     }
+    
 
+    // Handle subscription.charged event
     if (event.event === "subscription.charged") {
       const subscriptionId = event.payload.subscription.entity.id;
-      const paymentEntity = event.payload.payment.entity;
-      const paymentId = paymentEntity.id;
-      const chargedAt = new Date(paymentEntity.created_at * 1000);
-      const amount = paymentEntity.amount / 100;
+      const paymentId = event.payload.payment.entity.id;
+      const amount = event.payload.payment.entity.amount / 100;
 
-      // Update subscription with the actual charge time
-      await Subscription.findOneAndUpdate(
-        { razorpaySubscriptionId: subscriptionId },
-        { lastPaymentAt: chargedAt }
-      );
-
-      // Prefer updating an existing pending AutoDonation, else create new
       const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (subscription && subscription.status === "active") {
-        const updated = await AutoDonation.findOneAndUpdate(
-          {
-            razorpaySubscriptionId: subscriptionId,
-            $or: [
-              { razorpayPaymentId: { $exists: false } },
-              { razorpayPaymentId: null },
-              { razorpayPaymentId: "" },
-            ],
-          },
-          {
-            $set: {
-              donorId: subscription.donorId,
-              name: subscription.name || "Anonymous",
-              phone: standardizePhoneNumber(subscription.phoneNumber || subscription.phone),
-              amount: subscription.amount || amount,
-              period: subscription.period,
-              district: subscription.district,
-              panchayat: subscription.panchayat,
-              planId: subscription.planId,
-              email: subscription.email,
-              razorpayPaymentId: paymentId,
-              status: "Completed",
-              method: "auto",
-              paymentStatus: "paid",
-              subscriptionId: subscription._id,
-              type: subscription.type || "General",
-              paymentDate: chargedAt,
-            },
-          },
-          { new: true }
-        );
-
-        if (!updated) {
-          const autoDonation = new AutoDonation({
-            donorId: subscription.donorId,
-            razorpaySubscriptionId: subscriptionId,
-            name: subscription.name || "Anonymous",
-            phone: standardizePhoneNumber(subscription.phoneNumber || subscription.phone),
-            amount: subscription.amount || amount,
-            period: subscription.period,
-            district: subscription.district,
-            panchayat: subscription.panchayat,
-            planId: subscription.planId,
-            email: subscription.email,
-            razorpayPaymentId: paymentId,
-            status: "Completed",
-            method: "auto",
-            paymentStatus: "paid",
-            subscriptionId: subscription._id,
-            type: subscription.type || "General",
-            paymentDate: chargedAt,
-          });
-          await autoDonation.save();
-        }
+      if (!subscription || subscription.status !== "active") {
+        return NextResponse.json({ received: true });
       }
-      // ...existing code...
+
+      const standardizedPhone = standardizePhoneNumber(subscription.phone);
+      if (!standardizedPhone) {
+        console.error("Invalid phone number for subscription.charged:", subscription.phone);
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
+      }
+
+      const autoDonation = new AutoDonation({
+        donorId: subscription.donorId,
+        razorpaySubscriptionId: subscriptionId,
+        name: subscription.name || "Anonymous",
+        phone: standardizedPhone,
+        amount: subscription.amount,
+        period: subscription.period,
+        district: subscription.district,
+        panchayat: subscription.panchayat,
+        planId: subscription.planId,
+        email: subscription.email,
+        razorpayPaymentId: paymentId,
+        status: "Completed",
+        method: "auto",
+        paymentStatus: "paid",
+        subscriptionId: subscription._id,
+        type: subscription.type || "General",
+      });
+      await autoDonation.save();
+      console.log("Recurring donation recorded:", autoDonation);
+
+       await Subscription.findByIdAndUpdate(
+        subscription._id,
+        {
+          createdAt: new Date(),
+          lastPaymentAt: new Date(),
+          phone: standardizedPhone, // Update phone number in subscription
+        },
+        { new: true }
+      );
+     
+
+      // Twilio notification
+      const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
+      const toNumber = standardizedPhone.startsWith("+")
+        ? `whatsapp:${standardizedPhone}`
+        : `whatsapp:+91${standardizedPhone}`;
+      try {
+        await twilioClient.messages.create({
+          body: `Payment of ₹${amount} for your ${subscription.period} donation subscription received! Thank you for your support.`,
+          from: fromNumber,
+          to: toNumber,
+        });
+      } catch (twilioError) {
+        console.error("Twilio error:", twilioError.message);
+      }
     }
 
     // Handle payment.captured event
