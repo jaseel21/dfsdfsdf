@@ -98,25 +98,9 @@ export async function POST(req) {
         status: "active",
       };
     
-      try {
-        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-          },
-          body: JSON.stringify(subscriptionDetails),
-        });
-    
-        const apiData = await apiResponse.json();
-        if (!apiResponse.ok) {
-          console.error("Failed to update subscription status:", apiData.error || "Unknown error");
-        } else {
-          console.log("Subscription status updated successfully:", apiData);
-        }
-      } catch (apiError) {
-        console.error("Error calling /api/update-subscription-status:", apiError.message);
-      }
+      // Note: Payment creation is now handled in subscription.charged event
+      // This prevents duplicate payments and ensures proper payment ID handling
+      console.log("Subscription activated, payment will be created when subscription.charged event fires");
     }
     
 
@@ -126,9 +110,75 @@ export async function POST(req) {
       const paymentId = event.payload.payment.entity.id;
       const amount = event.payload.payment.entity.amount / 100;
 
-      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (!subscription || subscription.status !== "active") {
-        return NextResponse.json({ received: true });
+      let subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      
+      // If subscription doesn't exist, it might be the first charge before activation
+      if (!subscription) {
+        console.log("Subscription not found in charged event, this might be the initial payment before activation");
+        
+        // Try to get subscription details from Razorpay API
+        try {
+          const razorpayResponse = await fetch(`https://api.razorpay.com/v1/subscriptions/${subscriptionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (razorpayResponse.ok) {
+            const razorpaySubscription = await razorpayResponse.json();
+            const notes = razorpaySubscription.notes || {};
+            
+            // Create donor first
+            const standardizedPhone = standardizePhoneNumber(notes.phoneNumber);
+            if (!standardizedPhone) {
+              console.error("Invalid phone number in subscription notes");
+              return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
+            }
+            
+            let donor = await Donor.findOne({ phone: standardizedPhone });
+            if (!donor) {
+              donor = await Donor.create({
+                name: notes.name || "Anonymous",
+                phone: standardizedPhone,
+                email: notes.email || "",
+                period: notes.period || "monthly"
+              });
+            }
+            
+            // Create subscription
+            subscription = await Subscription.create({
+              donorId: donor._id,
+              razorpaySubscriptionId: subscriptionId,
+              name: notes.name || "Anonymous",
+              phone: standardizedPhone,
+              amount: razorpaySubscription.plan.amount / 100,
+              period: notes.period || "monthly",
+              district: notes.district || "",
+              panchayat: notes.panchayat || "",
+              planId: razorpaySubscription.plan.id,
+              email: notes.email || "",
+              method: "auto",
+              status: "active",
+              type: notes.type || "General"
+            });
+            
+            console.log("Created subscription from charged event:", subscription);
+          } else {
+            console.error("Failed to fetch subscription from Razorpay API");
+            return NextResponse.json({ received: true });
+          }
+        } catch (apiError) {
+          console.error("Error fetching subscription from Razorpay:", apiError);
+          return NextResponse.json({ received: true });
+        }
+      }
+      
+      // If subscription exists but not active, activate it and create the payment
+      if (subscription.status !== "active") {
+        console.log("Activating subscription and creating initial payment from charged event");
+        await Subscription.findByIdAndUpdate(subscription._id, { status: "active" });
       }
 
       const standardizedPhone = standardizePhoneNumber(subscription.phone);
@@ -137,12 +187,26 @@ export async function POST(req) {
         return NextResponse.json({ error: "Invalid phone number" }, { status: 401 });
       }
 
+      // Check for duplicate payment
+      const existingPayment = await AutoDonation.findOne({ 
+        razorpayPaymentId: paymentId 
+      });
+      if (existingPayment) {
+        console.log("Duplicate payment found:", paymentId);
+        return NextResponse.json({ received: true });
+      }
+      
+      // Check if this is the first payment (no previous payments for this subscription)
+      const existingPayments = await AutoDonation.countDocuments({ 
+        razorpaySubscriptionId: subscriptionId 
+      });
+      
       const autoDonation = new AutoDonation({
         donorId: subscription.donorId,
         razorpaySubscriptionId: subscriptionId,
         name: subscription.name || "Anonymous",
         phone: standardizedPhone,
-        amount: subscription.amount,
+        amount: amount, // Use the actual charged amount, not subscription amount
         period: subscription.period,
         district: subscription.district,
         panchayat: subscription.panchayat,
@@ -154,9 +218,10 @@ export async function POST(req) {
         paymentStatus: "paid",
         subscriptionId: subscription._id,
         type: subscription.type || "General",
+        isInitialPayment: existingPayments === 0, // Mark if this is the first payment
       });
       await autoDonation.save();
-      console.log("Recurring donation recorded:", autoDonation);
+      console.log(`${existingPayments === 0 ? 'Initial' : 'Recurring'} donation recorded:`, autoDonation);
 
        await Subscription.findByIdAndUpdate(
         subscription._id,
