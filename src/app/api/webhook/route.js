@@ -97,6 +97,8 @@ export async function POST(req) {
         subscriptionStartDate, // added the new field here
         status: "active",
       };
+      console.log(subscriptionDetails);
+      
     
       // Note: Payment creation is now handled in subscription.charged event
       // This prevents duplicate payments and ensures proper payment ID handling
