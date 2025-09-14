@@ -1,12 +1,15 @@
 import connectDB from "../../../lib/db";
 import AutoDonation from "../../../models/AutoDonation";
 import Donation from "@/models/Donation";
-import Subscription from "../../../models/Subscription";
+import Subscription from "../../../models/AutoSubscription";
 import Sponsor from "@/models/Sponsor";
 import Donor from "@/models/Donor";
 import Sdonation from "@/models/Sdonation";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import twilio from "twilio";
+
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const verifySignature = (body, signature, secret) => {
   const hmac = crypto.createHmac("sha256", secret);
