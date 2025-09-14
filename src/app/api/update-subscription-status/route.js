@@ -2,7 +2,6 @@ import connectDB from "../../../lib/db";
 import Subscription from "../../../models/AutoSubscription";
 import { NextResponse } from "next/server";
 import Donor from "../../../models/Donor";
-import Donation from "../../../models/Donation";
 // import twilio from "twilio";
 
 // const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
