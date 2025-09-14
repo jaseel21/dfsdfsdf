@@ -99,7 +99,7 @@ export async function POST(req) {
       };
     
       try {
-        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-subscription-status`, {
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/update-autosubscription-status`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -126,9 +126,60 @@ export async function POST(req) {
       const paymentId = event.payload.payment.entity.id;
       const amount = event.payload.payment.entity.amount / 100;
 
-      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
-      if (!subscription || subscription.status !== "active") {
+      // Check for duplicate payment first
+      const existingAutoDonation = await AutoDonation.findOne({ razorpayPaymentId: paymentId });
+      if (existingAutoDonation) {
+        console.log("Duplicate AutoDonation found for paymentId:", paymentId);
         return NextResponse.json({ received: true });
+      }
+
+      let subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      if (!subscription) {
+        console.log("Subscription not found for subscriptionId:", subscriptionId, "- This might be a charged event before activated event");
+        // Try to get subscription details from the webhook payload
+        const subscriptionData = event.payload.subscription.entity;
+        const notes = subscriptionData.notes || {};
+        
+        // Create donor if needed
+        const standardizedPhone = standardizePhoneNumber(notes.phoneNumber || "");
+        if (!standardizedPhone) {
+          console.error("Cannot create subscription without valid phone number");
+          return NextResponse.json({ received: true });
+        }
+
+        let donor = await Donor.findOne({ phone: standardizedPhone });
+        if (!donor) {
+          donor = await Donor.create({
+            name: notes.name || "Anonymous",
+            phone: standardizedPhone,
+            email: notes.email || "",
+            period: notes.period || "monthly"
+          });
+        }
+
+        // Create subscription
+        subscription = await Subscription.create({
+          donorId: donor._id,
+          razorpaySubscriptionId: subscriptionId,
+          name: notes.name || "Anonymous",
+          phone: standardizedPhone,
+          amount: notes.amount || 0,
+          period: notes.period || "monthly",
+          district: notes.district || "",
+          panchayat: notes.panchayat || "",
+          planId: notes.planId || "",
+          email: notes.email || "",
+          status: "active",
+          method: "auto",
+          type: notes.type || "General"
+        });
+        console.log("Created subscription from charged event:", subscription);
+      }
+
+      // If subscription is not active, try to activate it (handles case where charged event comes before activated)
+      if (subscription.status !== "active") {
+        console.log("Activating subscription from charged event:", subscriptionId);
+        await Subscription.findByIdAndUpdate(subscription._id, { status: "active" });
       }
 
       const standardizedPhone = standardizePhoneNumber(subscription.phone);
@@ -156,7 +207,7 @@ export async function POST(req) {
         type: subscription.type || "General",
       });
       await autoDonation.save();
-      console.log("Recurring donation recorded:", autoDonation);
+      console.log("Donation recorded (initial or recurring):", autoDonation);
 
        await Subscription.findByIdAndUpdate(
         subscription._id,
