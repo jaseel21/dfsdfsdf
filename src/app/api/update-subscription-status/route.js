@@ -1,7 +1,7 @@
 import connectDB from "../../../lib/db";
 import Subscription from "../../../models/AutoSubscription";
 import { NextResponse } from "next/server";
-import Donor from "../../../models/Donor";
+import Donor from "../../../models/Donor"
 // import twilio from "twilio";
 
 // const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -50,9 +50,25 @@ export async function POST(req) {
     await subscription.save();
     console.log("Subscription saved to DB:", subscription);
 
-    // Donation will be created by subscription.charged event with proper paymentId
-    // This prevents duplicate donations (one without paymentId, one with paymentId)
-    console.log("Subscription created, waiting for subscription.charged event to create donation with paymentId");
+    // const donation = new Donation({
+    //   donorId:donor._id,
+    //   razorpaySubscriptionId,
+    //   name: subscription.name || "Anonymous", // Fallback if name isn’t stored in Subscription
+    //   phone: phone,
+    //   amount: subscription.amount,
+    //   period: subscription.period,
+    //   district:subscription.district,
+    //   panchayat:subscription.panchayat,
+    //   planId:subscription.planId,
+    //   email,
+    //   razorpayPaymentId: razorpay_payment_id,
+    //   status:"Completed",
+    //   method:"auto",
+    //   paymentStatus: "paid",
+    //   subscriptionId:subscription._id,
+    // });
+    // await donation.save();
+    // console.log("Initial donation recorded:", donation);
 
     // const fromNumber = `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`;
     // // const toNumber = subscription.phoneNumber.startsWith("+")
