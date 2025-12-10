@@ -584,6 +584,86 @@ export async function POST(req) {
       }
     }
 
+    // Handle subscription.completed event
+    // This fires when a subscription reaches its total_count and completes
+    if (event.event === "subscription.completed") {
+      const subscriptionData = event.payload.subscription.entity;
+      const subscriptionId = subscriptionData.id;
+      
+      console.log("Subscription completed event received:", subscriptionId);
+      
+      // Find and update subscription status in database
+      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      
+      if (subscription) {
+        await Subscription.findByIdAndUpdate(
+          subscription._id,
+          { 
+            status: "completed",
+            isActive: false,
+            completedAt: new Date()
+          },
+          { new: true }
+        );
+        console.log("Subscription marked as completed in database:", subscription._id);
+      } else {
+        console.warn("Subscription not found in database for completed event:", subscriptionId);
+      }
+    }
+
+    // Handle subscription.halted event
+    // This fires when a subscription is halted due to max retry failures
+    if (event.event === "subscription.halted") {
+      const subscriptionData = event.payload.subscription.entity;
+      const subscriptionId = subscriptionData.id;
+      
+      console.log("Subscription halted event received:", subscriptionId);
+      
+      // Find and update subscription status in database
+      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      
+      if (subscription) {
+        await Subscription.findByIdAndUpdate(
+          subscription._id,
+          { 
+            status: "halted",
+            isActive: false,
+            haltedAt: new Date()
+          },
+          { new: true }
+        );
+        console.log("Subscription marked as halted in database:", subscription._id);
+      } else {
+        console.warn("Subscription not found in database for halted event:", subscriptionId);
+      }
+    }
+
+    // Handle subscription.cancelled event
+    // This fires when a subscription is cancelled (either by user or admin)
+    if (event.event === "subscription.cancelled") {
+      const subscriptionData = event.payload.subscription.entity;
+      const subscriptionId = subscriptionData.id;
+      
+      console.log("Subscription cancelled event received:", subscriptionId);
+      
+      // Note: Your cancel-subscription route already handles this,
+      // but this webhook provides additional confirmation from Razorpay
+      const subscription = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
+      
+      if (subscription && subscription.status !== "cancelled") {
+        await Subscription.findByIdAndUpdate(
+          subscription._id,
+          { 
+            status: "cancelled",
+            isActive: false,
+            cancelledAt: new Date()
+          },
+          { new: true }
+        );
+        console.log("Subscription confirmed as cancelled in database:", subscription._id);
+      }
+    }
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Webhook error:", error);
