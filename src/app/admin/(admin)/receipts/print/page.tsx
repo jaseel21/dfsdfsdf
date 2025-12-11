@@ -1,6 +1,6 @@
 // src/app/(admin)/receipts/print/page.tsx
 "use client";
-import React from "react";
+
 
 export default function PrintReceiptsPage() {
   return (

@@ -1,0 +1,125 @@
+﻿
+> aic-amal@0.1.0 build
+> next build --webpack
+
+   ظû▓ Next.js 16.0.8 (webpack)
+   - Environments: .env.local
+
+npm :  ظأب The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://ne
+xtjs.org/docs/messages
+/middleware-to-proxy
+At line:1 char:1
++ npm run build 2>&1 
+| Out-File -Encoding 
+utf8 build_verify.log
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: ( ظأب The "   
+ middl...leware-to    
+-proxy:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+   Creating an optimized production build ...
+Failed to compile.
+
+./node_modules/@fullca
+lendar/daygrid/index.j
+s
+Module not found: 
+Can't resolve '@fullca
+lendar/core/index.js'
+
+https://nextjs.org/doc
+s/messages/module-not-
+found
+
+Import trace for 
+requested module:
+./src/components/calen
+dar/Calendar.tsx
+
+./node_modules/@fullca
+lendar/daygrid/index.j
+s
+Module not found: 
+Can't resolve '@fullca
+lendar/core/internal.j
+s'
+
+https://nextjs.org/doc
+s/messages/module-not-
+found
+
+Import trace for 
+requested module:
+./src/components/calen
+dar/Calendar.tsx
+
+./node_modules/@fullca
+lendar/daygrid/index.j
+s
+Module not found: 
+Can't resolve '@fullca
+lendar/core/preact.js'
+
+https://nextjs.org/doc
+s/messages/module-not-
+found
+
+Import trace for 
+requested module:
+./src/components/calen
+dar/Calendar.tsx
+
+./node_modules/@fullca
+lendar/daygrid/interna
+l.js
+Module not found: 
+Can't resolve '@fullca
+lendar/core/internal.j
+s'
+
+https://nextjs.org/doc
+s/messages/module-not-
+found
+
+Import trace for 
+requested module:
+./node_modules/@fullca
+lendar/daygrid/index.j
+s
+./src/components/calen
+dar/Calendar.tsx
+
+./node_modules/@fullca
+lendar/daygrid/interna
+l.js
+Module not found: 
+Can't resolve '@fullca
+lendar/core/preact.js'
+
+https://nextjs.org/doc
+s/messages/module-not-
+found
+
+Import trace for 
+requested module:
+./node_modules/@fullca
+lendar/daygrid/index.j
+s
+./src/components/calen
+dar/Calendar.tsx
+
+
+> Build failed 
+because of webpack 
+errors

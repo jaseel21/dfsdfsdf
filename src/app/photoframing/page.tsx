@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, MouseEvent } from "react";
+import  { useState, useEffect, useRef, MouseEvent } from "react";
 import {
   Upload,
   Save,

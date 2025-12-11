@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import Link from "next/link";
 import {
     PlusCircle, FileText, Users, Layers, Medal, TrendingUp, BarChart3, Folder, FolderTree,

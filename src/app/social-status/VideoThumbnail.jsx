@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import { Film, RefreshCw, Play } from "lucide-react";
 import NextImage from "next/image";
 

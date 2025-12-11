@@ -3,7 +3,7 @@ import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
-import React, { useEffect, useState, ReactNode } from "react";
+import  { useEffect, useState, ReactNode } from "react";
 import BackgroundEffects from "@/components/backgroundEffects/BackgroundEffects";
 
 interface AdminLayoutProps {

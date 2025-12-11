@@ -2,7 +2,7 @@ import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { Metadata } from "next";
-import React from "react";
+
 
 export const metadata: Metadata = {
   title: "Next.js Avatars | AIC Amal App - Donation Platform",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Sponsorship } from "@/app/admin/(admin)/sponsorships/list/page";
 import LocationSelector, { LocationType } from "../../LocationSelector"; // Import the new component

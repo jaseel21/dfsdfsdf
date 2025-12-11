@@ -1,6 +1,6 @@
 // src/app/(admin)/agents/collections/page.tsx
 "use client";
-import React from "react";
+
 
 export default function TrackCollectionsPage() {
   return (

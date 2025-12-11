@@ -1,4 +1,3 @@
-import React from "react";
 import { ArrowUpDown, Eye, Edit, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { Sponsorship } from "@/app/admin/(admin)/sponsorships/list/page";

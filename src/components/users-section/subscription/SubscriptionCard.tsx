@@ -1,5 +1,4 @@
 // src/components/subscription/SubscriptionCard.tsx
-import React from 'react';
 import { motion } from "framer-motion";
 import { Subscription as SubType } from "./types";
 

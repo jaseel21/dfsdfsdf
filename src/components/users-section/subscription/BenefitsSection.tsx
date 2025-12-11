@@ -1,5 +1,4 @@
 // src/components/subscription/BenefitsSection.tsx
-import React from 'react';
 
 interface BenefitProps {
   icon: React.ReactNode;

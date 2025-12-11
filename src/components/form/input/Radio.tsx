@@ -1,4 +1,3 @@
-import React from "react";
 
 interface RadioProps {
   id: string; // Unique ID for the radio button

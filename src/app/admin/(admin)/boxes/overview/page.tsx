@@ -1,6 +1,6 @@
 // src/app/(admin)/boxes/overview/page.tsx
 "use client";
-import React from "react";
+
 
 export default function BoxOverviewPage() {
   return (
