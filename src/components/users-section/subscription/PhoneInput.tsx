@@ -18,25 +18,25 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { 
+      transition: {
         staggerChildren: 0.1
       }
     }
   };
-  
+
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
+    visible: {
+      y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 150 }
+      transition: { type: "spring" as const, stiffness: 150 }
     }
   };
 
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -47,7 +47,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           <h2 className="text-2xl font-bold mb-2">Login to Your Account</h2>
           <p className="text-indigo-100">Enter your phone number to access your subscriptions and payment history</p>
         </div>
-        
+
         <form onSubmit={handlePhoneSubmit} className="p-6">
           <div className="mb-6">
             <label className="block text-gray-700 font-medium mb-2">Phone Number</label>
@@ -66,7 +66,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
               />
             </div>
           </div>
-          
+
           <button
             type="submit"
             disabled={isVerifying || phoneNumber.length !== 10}
@@ -84,12 +84,12 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
             }
           </button>
         </form>
-        
+
         <div className="px-6 pb-6 text-center text-gray-500 text-sm">
           By continuing, you agree to our terms and privacy policy.
         </div>
       </motion.div>
-      
+
       <motion.div variants={itemVariants} className="text-center">
         <button
           onClick={() => setUserMode("new")}

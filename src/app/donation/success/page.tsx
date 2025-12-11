@@ -95,7 +95,7 @@ const DonationSuccessPage = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" as const }}
         className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-gray-200/50"
       >
         {/* Header Section */}

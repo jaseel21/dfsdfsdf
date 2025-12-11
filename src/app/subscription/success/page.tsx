@@ -18,7 +18,7 @@ interface ReceiptData {
   razorpayPaymentId: string;
   razorpayOrderId: string;
   instituteId?: string;
-  method:string;
+  method: string;
   createdAt: string;
 
 }
@@ -99,7 +99,7 @@ const CausesSuccessPage = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" as const }}
         className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-gray-200/50"
       >
         {/* Header Section */}
@@ -148,7 +148,7 @@ const CausesSuccessPage = () => {
               <dt className="font-medium text-gray-500">Payment ID</dt>
               <dd className="font-semibold text-gray-900 truncate max-w-[200px]">{details.razorpayPaymentId}</dd>
             </div>
-            
+
             <div className="flex justify-between items-center">
               <dt className="font-medium text-gray-500">Location</dt>
               <dd className="font-semibold text-gray-900">

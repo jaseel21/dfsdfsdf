@@ -19,7 +19,7 @@ const DonationAmountSelector = ({
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 }
+      transition: { type: "spring" as const, stiffness: 100 }
     }
   };
 
@@ -33,7 +33,7 @@ const DonationAmountSelector = ({
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
       variants={itemVariants}
     >
@@ -44,11 +44,10 @@ const DonationAmountSelector = ({
             key={amount}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`bg-gradient-to-r ${
-              selectedAmount === amount 
-                ? "from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white" 
+            className={`bg-gradient-to-r ${selectedAmount === amount
+                ? "from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white"
                 : "from-indigo-50 to-indigo-100 dark:from-indigo-900 dark:to-indigo-800 text-indigo-700 dark:text-indigo-200 hover:from-indigo-100 hover:to-indigo-200 dark:hover:from-indigo-800 dark:hover:to-indigo-700"
-            } text-xl font-bold px-6 py-5 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center`}
+              } text-xl font-bold px-6 py-5 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center`}
             onClick={() => onSelectAmount(amount)}
             type="button"
           >

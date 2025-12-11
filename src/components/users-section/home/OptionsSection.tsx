@@ -98,7 +98,7 @@ export const OptionsSection = () => {
             transition: {
                 delay: custom * 0.1,
                 duration: 0.5,
-                ease: "easeOut"
+                ease: "easeOut" as const
             }
         }),
         hover: {

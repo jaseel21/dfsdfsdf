@@ -28,18 +28,17 @@ const CauseCard = ({
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 },
+      transition: { type: "spring" as const, stiffness: 100 },
     },
   };
 
   return (
     <motion.div
       variants={itemVariants}
-      className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl transition-all duration-300 ${
-        isActive
+      className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl transition-all duration-300 ${isActive
           ? "ring-4 ring-indigo-500 dark:ring-indigo-400 transform scale-[1.02] overflow-visible z-10"
           : "hover:shadow-2xl hover:translate-y-[-5px] overflow-hidden"
-      }`}
+        }`}
     >
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">

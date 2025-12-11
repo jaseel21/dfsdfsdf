@@ -26,7 +26,7 @@ const FeatureCard = ({ icon, title, description, link, index }: FeatureCardProps
       transition: {
         duration: 0.6,
         delay: index * 0.1,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };

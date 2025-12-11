@@ -8,10 +8,10 @@ import { DonationType } from "./types";
 
 const GeneralDonation: React.FC = () => {
   // const router = useRouter();
-  const [form, setForm] = useState({ 
-    fullName: "", 
-    phoneNumber: "", 
-    donationType: "", 
+  const [form, setForm] = useState({
+    fullName: "",
+    phoneNumber: "",
+    donationType: "",
     location: "",
     amount: 0,
     email: "",
@@ -19,7 +19,7 @@ const GeneralDonation: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showThanks, setShowThanks] = useState(false);
-  
+
   const donationAmounts = [100, 313, 786, 1000];
   const donationTypes: DonationType[] = [
     { id: 1, name: "General" },
@@ -35,7 +35,7 @@ const GeneralDonation: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       // Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -60,13 +60,13 @@ const GeneralDonation: React.FC = () => {
       }
     }
   };
-  
+
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 }
+      transition: { type: "spring" as const, stiffness: 100 }
     }
   };
 
@@ -74,7 +74,7 @@ const GeneralDonation: React.FC = () => {
     return (
       <section className="py-24 px-6 bg-gradient-to-r from-indigo-50 to-purple-50">
         <div className="container mx-auto max-w-4xl">
-          <motion.div 
+          <motion.div
             className="bg-white p-12 rounded-3xl shadow-xl text-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -104,7 +104,7 @@ const GeneralDonation: React.FC = () => {
   return (
     <section className="py-24 px-6 bg-gradient-to-r from-indigo-50 to-purple-50">
       <div className="container mx-auto max-w-6xl">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -117,17 +117,17 @@ const GeneralDonation: React.FC = () => {
           <h2 className="text-5xl font-extrabold text-indigo-900 mb-4">General Donation</h2>
           <p className="text-xl text-indigo-700 max-w-2xl mx-auto">Your contribution helps us continue our mission and impact communities in need.</p>
         </motion.div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Donation Amounts Column */}
-          <motion.div 
+          <motion.div
             className="space-y-6"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white p-8 rounded-2xl shadow-lg"
               variants={itemVariants}
             >
@@ -138,11 +138,10 @@ const GeneralDonation: React.FC = () => {
                     key={amount}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`bg-gradient-to-r ${
-                      form.amount === amount 
-                        ? "from-indigo-600 to-purple-600 text-white" 
+                    className={`bg-gradient-to-r ${form.amount === amount
+                        ? "from-indigo-600 to-purple-600 text-white"
                         : "from-indigo-50 to-indigo-100 text-indigo-700 hover:from-indigo-100 hover:to-indigo-200"
-                    } text-xl font-bold px-6 py-5 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center`}
+                      } text-xl font-bold px-6 py-5 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center`}
                     onClick={() => handleDonateClick(amount)}
                   >
                     ₹ {amount.toLocaleString()}
@@ -160,8 +159,8 @@ const GeneralDonation: React.FC = () => {
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-400 font-medium">₹</span>
               </div>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className="bg-white p-8 rounded-2xl shadow-lg"
               variants={itemVariants}
             >
@@ -211,7 +210,7 @@ const GeneralDonation: React.FC = () => {
               </div>
             </motion.div>
           </motion.div>
-          
+
           {/* Form Column */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -221,7 +220,7 @@ const GeneralDonation: React.FC = () => {
           >
             <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-xl">
               <h3 className="text-2xl font-bold text-indigo-900 mb-6">Donor Information</h3>
-              
+
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Full Name</label>
@@ -234,7 +233,7 @@ const GeneralDonation: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Phone Number</label>
                   <input
@@ -247,7 +246,7 @@ const GeneralDonation: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Email (Optional)</label>
                   <input
@@ -258,7 +257,7 @@ const GeneralDonation: React.FC = () => {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Donation Type</label>
                   <select
@@ -278,7 +277,7 @@ const GeneralDonation: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Location</label>
                   <input
@@ -290,7 +289,7 @@ const GeneralDonation: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-indigo-800 font-medium mb-2">Message (Optional)</label>
                   <textarea
@@ -302,7 +301,7 @@ const GeneralDonation: React.FC = () => {
                   ></textarea>
                 </div>
               </div>
-              
+
               <motion.button
                 type="submit"
                 disabled={isLoading || !form.amount || !form.fullName || !form.phoneNumber || !form.donationType}
@@ -321,7 +320,7 @@ const GeneralDonation: React.FC = () => {
                 ) : "Donate Now"
                 }
               </motion.button>
-              
+
               <div className="mt-6 flex items-center justify-center">
                 <div className="bg-indigo-50 p-3 rounded-full mr-3">
                   <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
