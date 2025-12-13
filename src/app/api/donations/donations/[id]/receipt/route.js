@@ -231,7 +231,7 @@ function generateReceiptHTML(donation) {
         
         <div class="footer">
           <p>Thank you for your generous contribution!</p>
-          <p>Akode Islamic Centre | Phone: +91 9745 83 33 99 | Email: info@aicamal.org</p>
+          <p>Akode Islamic Centre | Phone: +91 9745 83 33 99 | Email: hello@aicamal.app</p>
           <p>This receipt is electronically generated and is valid without signature.</p>
         </div>
       </div>

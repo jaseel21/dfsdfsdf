@@ -527,7 +527,7 @@ export const printToPDF = (data: Donation[], title: string = 'Donations Report')
           
           <div class="footer">
             <p>This document is electronically generated and does not require a signature.</p>
-            <p>Akode Islamic Centre | Phone: +91 9745 83 33 99 | Email: info@aicamal.org</p>
+            <p>Akode Islamic Centre | Phone: +91 9745 83 33 99 | Email: hello@aicamal.app</p>
           </div>
         </div>
       </body>

@@ -1,10 +1,12 @@
 "use client";
-import  { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Filter,
   Calendar,
   ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
   RefreshCw,
   Eye,
   Edit,
@@ -22,6 +24,8 @@ import {
 import Link from "next/link";
 import { handleExport } from "./exportFunctions";
 import ExportDropdown from "@/components/ExportDropdown/ExportDropdown";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define the Donation interface
 interface Donation {
@@ -38,6 +42,8 @@ interface Donation {
   razorpayOrderId?: string;
   name?: string;
   createdAt?: string;
+  createdAtTimestamp?: number;
+  method?: string; // Added method field for type safety
 }
 
 // Define API response interface
@@ -47,16 +53,48 @@ interface DonationResponse {
   totalPages: number;
 }
 
-// Define debounce function outside the component
-const debounce = <T extends (...args: Parameters<T>) => void>(func: T, wait: number) => {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>): void => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
+// Utility function to format date and time
+const formatDateTime = (donation: Donation) => {
+  try {
+    let date: Date;
+
+    // Priority order: createdAtTimestamp > createdAt > date
+    if (donation.createdAtTimestamp) {
+      date = new Date(donation.createdAtTimestamp);
+    } else if (donation.createdAt) {
+      date = new Date(donation.createdAt);
+    } else if (donation.date && donation.date !== "N/A") {
+      date = new Date(donation.date);
+    } else {
+      return "N/A";
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "Invalid Date";
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Invalid Date";
+  }
 };
 
 export default function AllDonationsPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission =
+    isSuperAdmin ||
+    (session?.user as { permissions?: string[] })?.permissions?.includes(
+      "donation_all"
+    );
+
   // States with explicit types
   const [searchText, setSearchText] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
@@ -65,95 +103,32 @@ export default function AllDonationsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage: number = 10;
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
-
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [displayedDonations, setDisplayedDonations] = useState<Donation[]>([]);
-  const [filteredDonations, setFilteredDonations] = useState<Donation[]>([]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
-  const [donationToDelete, setDonationToDelete] = useState<Donation | null>(null);
-
-  // Memoized fetchDonations
-  const fetchDonations = useCallback(
-    async (applyFilters: boolean = false) => {
-      setIsLoading(true);
-
-      if (applyFilters) {
-        setCurrentPage(1);
-      }
-
-      try {
-        const params = new URLSearchParams({
-          search: searchText,
-          type: selectedType,
-          status: selectedStatus,
-          page: applyFilters ? "1" : currentPage.toString(),
-          limit: itemsPerPage.toString(),
-          sortBy: mapSortByToDbField(sortBy),
-          sortOrder: sortOrder,
-        });
-
-        if (dateFrom) params.append("dateFrom", dateFrom);
-        if (dateTo) params.append("dateTo", dateTo);
-
-        const response = await fetch(`/api/donations/dashboard/donations?${params.toString()}`, {
-          headers: {
-            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch donations");
-        }
-
-        const data: DonationResponse = await response.json();
-
-        setDisplayedDonations(data.donations);
-        setFilteredDonations(data.donations);
-        setTotalItems(data.totalItems);
-        setTotalPages(data.totalPages);
-      } catch (error) {
-        console.error("Error fetching donations:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchText, selectedType, selectedStatus, dateFrom, dateTo, sortBy, sortOrder, currentPage, itemsPerPage]
+  const [donationToDelete, setDonationToDelete] = useState<Donation | null>(
+    null
   );
 
-  // Create debounced fetch function
-  const debouncedFetch = useCallback(
-    (applyFilters: boolean) => {
-      const debounced = debounce(fetchDonations, 500);
-      debounced(applyFilters);
-    },
-    [fetchDonations]
-  );
+  // Ref to track previous filter values
+  const prevFiltersRef = useRef({
+    searchText: "",
+    selectedType: "",
+    selectedStatus: "",
+    dateFrom: "",
+    dateTo: "",
+    sortBy: "date",
+    sortOrder: "desc" as "asc" | "desc",
+  });
 
-  // Single useEffect to handle all fetches
-  useEffect(() => {
-    // Determine if this is a filter change (applyFilters: true) or pagination/sort change (applyFilters: false)
-    const isFilterChange =
-      searchText !== "" ||
-      selectedType !== "" ||
-      selectedStatus !== "" ||
-      dateFrom !== "" ||
-      dateTo !== "";
-
-    if (isFilterChange) {
-      debouncedFetch(true);
-    } else {
-      fetchDonations(false);
-    }
-  }, [fetchDonations, debouncedFetch, searchText, selectedType, selectedStatus, dateFrom, dateTo, sortBy, sortOrder, currentPage]);
-
+  // Map UI sort fields to database fields
   const mapSortByToDbField = (uiField: string): string => {
     const mapping: { [key: string]: string } = {
       id: "razorpayOrderId",
@@ -163,6 +138,104 @@ export default function AllDonationsPage() {
     };
     return mapping[uiField] || "createdAt";
   };
+
+  // Memoized fetchDonations
+  const fetchDonations = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchText,
+        type: selectedType,
+        status: selectedStatus,
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        sortBy: mapSortByToDbField(sortBy),
+        sortOrder,
+      });
+
+      if (dateFrom) params.append("dateFrom", dateFrom);
+      if (dateTo) params.append("dateTo", dateTo);
+
+      const response = await fetch(
+        `/api/donations/dashboard/donations?${params.toString()}`,
+        {
+          headers: {
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: DonationResponse = await response.json();
+
+      setDisplayedDonations(data.donations);
+      setTotalItems(data.totalItems);
+      setTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error fetching donations:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    searchText,
+    selectedType,
+    selectedStatus,
+    dateFrom,
+    dateTo,
+    sortBy,
+    sortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
+
+  // Debounced fetch for search text changes
+  useEffect(() => {
+    const prevFilters = prevFiltersRef.current;
+    const isFilterChange =
+      searchText !== prevFilters.searchText ||
+      selectedType !== prevFilters.selectedType ||
+      selectedStatus !== prevFilters.selectedStatus ||
+      dateFrom !== prevFilters.dateFrom ||
+      dateTo !== prevFilters.dateTo;
+
+    // Reset page to 1 if filters changed
+    if (isFilterChange && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
+
+    prevFiltersRef.current = {
+      searchText,
+      selectedType,
+      selectedStatus,
+      dateFrom,
+      dateTo,
+      sortBy,
+      sortOrder,
+    };
+
+    const timeoutId = setTimeout(() => {
+      fetchDonations();
+    }, searchText ? 500 : 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    searchText,
+    selectedType,
+    selectedStatus,
+    dateFrom,
+    dateTo,
+    sortBy,
+    sortOrder,
+    currentPage,
+    fetchDonations,
+  ]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   const StatusBadge = ({ status }: { status: string }) => {
     let bgColor = "bg-gray-500/20 text-gray-500";
@@ -180,7 +253,9 @@ export default function AllDonationsPage() {
     }
 
     return (
-      <span className={`px-2 py-1 rounded-full ${bgColor} flex items-center justify-center w-fit text-xs font-medium`}>
+      <span
+        className={`px-2 py-1 rounded-full ${bgColor} flex items-center justify-center w-fit text-xs font-medium`}
+      >
         {icon} {status}
       </span>
     );
@@ -201,9 +276,23 @@ export default function AllDonationsPage() {
       bgColor = "bg-red-500/20 text-red-500";
     } else if (type === "Box") {
       bgColor = "bg-cyan-500/20 text-cyan-500";
+    } else if (type === "Sponsor-Yatheem") {
+      bgColor = "bg-violet-500/20 text-violet-500";
+    } else if (type === "Sponsor-Hafiz") {
+      bgColor = "bg-fuchsia-500/20 text-fuchsia-500";
+    } else if (type === "Subscription-Auto") {
+      bgColor = "bg-emerald-500/20 text-emerald-500";
+    } else if (type === "Subscription-Manual") {
+      bgColor = "bg-teal-500/20 text-teal-500";
+    } else if (type.includes("Subscription")) {
+      bgColor = "bg-pink-500/20 text-pink-500";
     }
 
-    return <span className={`px-2 py-1 rounded-full ${bgColor} text-xs font-medium`}>{type}</span>;
+    return (
+      <span className={`px-2 py-1 rounded-full ${bgColor} text-xs font-medium`}>
+        {type}
+      </span>
+    );
   };
 
   const toggleSort = (column: string) => {
@@ -213,6 +302,25 @@ export default function AllDonationsPage() {
       setSortBy(column);
       setSortOrder("asc");
     }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 text-gray-400" />;
+    }
+    return sortOrder === "asc" ? (
+      <ChevronUp className="ml-1 h-4 w-4 text-emerald-500" />
+    ) : (
+      <ChevronDown className="ml-1 h-4 w-4 text-emerald-500" />
+    );
+  };
+
+  const getSortHeaderClass = (column: string) => {
+    const baseClass =
+      "flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 transition-colors";
+    return sortBy === column
+      ? `${baseClass} text-emerald-600 dark:text-emerald-400 font-semibold`
+      : baseClass;
   };
 
   const handlePageChange = (page: number) => {
@@ -249,7 +357,7 @@ export default function AllDonationsPage() {
   };
 
   const handleApplyFilters = () => {
-    fetchDonations(true);
+    setCurrentPage(1);
     setShowMobileFilters(false);
   };
 
@@ -259,12 +367,21 @@ export default function AllDonationsPage() {
     setSelectedStatus("");
     setDateFrom("");
     setDateTo("");
-    fetchDonations(true);
+    setCurrentPage(1);
+  };
+
+  const handleResetSort = () => {
+    setSortBy("date");
+    setSortOrder("desc");
+  };
+
+  const handleResetAll = () => {
+    handleResetFilters();
+    handleResetSort();
   };
 
   const handleExportWithAllData = async (type: "csv" | "pdf") => {
     setIsLoading(true);
-
     try {
       const params = new URLSearchParams({
         search: searchText,
@@ -272,17 +389,20 @@ export default function AllDonationsPage() {
         status: selectedStatus,
         exportAll: "true",
         sortBy: mapSortByToDbField(sortBy),
-        sortOrder: sortOrder,
+        sortOrder,
       });
 
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
 
-      const response = await fetch(`/api/donations/dashboard/donations?${params.toString()}`, {
-        headers: {
-          "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-        },
-      });
+      const response = await fetch(
+        `/api/donations/dashboard/donations?${params.toString()}`,
+        {
+          headers: {
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch donations for export");
@@ -298,10 +418,9 @@ export default function AllDonationsPage() {
   };
 
   const refreshData = () => {
-    fetchDonations(false);
+    fetchDonations();
   };
 
-  // Handle delete donation
   const handleDeleteClick = (donation: Donation) => {
     setDonationToDelete(donation);
     setDeleteConfirmOpen(true);
@@ -314,22 +433,22 @@ export default function AllDonationsPage() {
     setDeletingId(donationToDelete._id);
 
     try {
-      const response = await fetch(`/api/donations/dashboard/donations/${donationToDelete._id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-        },
-      });
+      const response = await fetch(
+        `/api/donations/dashboard/donations/${donationToDelete._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete donation");
       }
 
-      // Refresh the donation list
       fetchDonations();
-
-      // Close the confirmation dialog
       setDeleteConfirmOpen(false);
       setDonationToDelete(null);
     } catch (error) {
@@ -351,7 +470,9 @@ export default function AllDonationsPage() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-white">All Donations</h2>
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-white">
+            All Donations
+          </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             View and manage all donations across your organization
           </p>
@@ -366,13 +487,15 @@ export default function AllDonationsPage() {
           </Link>
           <ExportDropdown
             onExport={(type) => handleExportWithAllData(type)}
-            disabled={isLoading || filteredDonations.length === 0}
+            disabled={isLoading || displayedDonations.length === 0}
           />
           <button
             className="px-3 py-2 bg-white/10 text-black dark:text-white backdrop-blur-md rounded-lg border dark:border-white/20 border-gray-600/20 text-sm font-medium hover:bg-white/20 transition-all duration-300 flex items-center"
             onClick={refreshData}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </button>
           <button
             className="px-3 py-2 bg-white/10 text-black dark:text-white dark:border-white/20 border-gray-600/20 backdrop-blur-md rounded-lg border text-sm font-medium hover:bg-white/20 transition-all duration-300 flex items-center sm:hidden"
@@ -388,7 +511,9 @@ export default function AllDonationsPage() {
         {/* Desktop filters */}
         <div className="hidden md:flex flex-col md:flex-row items-start md:items-end gap-4 mb-6">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Search
+            </label>
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               <input
@@ -402,7 +527,9 @@ export default function AllDonationsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Type
+            </label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
@@ -416,11 +543,17 @@ export default function AllDonationsPage() {
               <option value="Campaign">Campaign</option>
               <option value="Institution">Institution</option>
               <option value="Box">Box</option>
+              <option value="Sponsor-Yatheem">Sponsor-Yatheem</option>
+              <option value="Sponsor-Hafiz">Sponsor-Hafiz</option>
+              <option value="Subscription-Auto">Subscription-Auto</option>
+              <option value="Subscription-Manual">Subscription-Manual</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Status
+            </label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -429,11 +562,14 @@ export default function AllDonationsPage() {
               <option value="">All Statuses</option>
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
+              <option value="Failed">Failed</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              From Date
+            </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               <input
@@ -446,7 +582,9 @@ export default function AllDonationsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              To Date
+            </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               <input
@@ -493,7 +631,9 @@ export default function AllDonationsPage() {
         {showMobileFilters && (
           <div className="md:hidden bg-white/20 dark:bg-gray-800/20 backdrop-blur-md rounded-xl p-4 mb-4 border border-white/30 animate-fadeIn">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium text-gray-800 dark:text-white">Filters</h3>
+              <h3 className="font-medium text-gray-800 dark:text-white">
+                Filters
+              </h3>
               <button onClick={() => setShowMobileFilters(false)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>
@@ -501,7 +641,9 @@ export default function AllDonationsPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Type
+                </label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
@@ -515,11 +657,17 @@ export default function AllDonationsPage() {
                   <option value="Campaign">Campaign</option>
                   <option value="Institution">Institution</option>
                   <option value="Box">Box</option>
+                  <option value="Sponsor-Yatheem">Sponsor-Yatheem</option>
+                  <option value="Sponsor-Hafiz">Sponsor-Hafiz</option>
+                  <option value="Subscription-Auto">Subscription-Auto</option>
+                  <option value="Subscription-Manual">Subscription-Manual</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status
+                </label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
@@ -528,11 +676,14 @@ export default function AllDonationsPage() {
                   <option value="">All Statuses</option>
                   <option value="Pending">Pending</option>
                   <option value="Completed">Completed</option>
+                  <option value="Failed">Failed</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  From Date
+                </label>
                 <input
                   type="date"
                   value={dateFrom}
@@ -542,7 +693,9 @@ export default function AllDonationsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  To Date
+                </label>
                 <input
                   type="date"
                   value={dateTo}
@@ -551,19 +704,56 @@ export default function AllDonationsPage() {
                 />
               </div>
 
+              <div className="pt-3 border-t border-white/20">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Sort Options
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Sort By
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-2 w-full bg-white/10 backdrop-blur-md rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800 dark:text-gray-200 text-sm"
+                    >
+                      <option value="date">Date & Time</option>
+                      <option value="donor">Donor Name</option>
+                      <option value="amount">Amount</option>
+                      <option value="id">ID</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Order
+                    </label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) =>
+                        setSortOrder(e.target.value as "asc" | "desc")
+                      }
+                      className="px-3 py-2 w-full bg-white/10 backdrop-blur-md rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800 dark:text-gray-200 text-sm"
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleApplyFilters}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-green-600 transition-all duration-300"
                 >
-                  Apply Filters
+                  Apply
                 </button>
-
                 <button
-                  onClick={handleResetFilters}
+                  onClick={handleResetAll}
                   className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-sm font-medium hover:bg-white/20 transition-all duration-300"
                 >
-                  Reset
+                  Reset All
                 </button>
               </div>
             </div>
@@ -577,70 +767,125 @@ export default function AllDonationsPage() {
               <div className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-xs">
                 Type: {selectedType}
                 <button
-                  onClick={() => {
-                    setSelectedType("");
-                    fetchDonations(true);
-                  }}
+                  onClick={() => setSelectedType("")}
                   className="ml-1 hover:text-blue-600"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
-
             {selectedStatus && (
               <div className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs">
                 Status: {selectedStatus}
                 <button
-                  onClick={() => {
-                    setSelectedStatus("");
-                    fetchDonations(true);
-                  }}
+                  onClick={() => setSelectedStatus("")}
                   className="ml-1 hover:text-green-600"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
-
             {dateFrom && (
               <div className="inline-flex items-center px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-xs">
                 From: {new Date(dateFrom).toLocaleDateString()}
                 <button
-                  onClick={() => {
-                    setDateFrom("");
-                    fetchDonations(true);
-                  }}
+                  onClick={() => setDateFrom("")}
                   className="ml-1 hover:text-amber-600"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
-
             {dateTo && (
               <div className="inline-flex items-center px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-xs">
                 To: {new Date(dateTo).toLocaleDateString()}
                 <button
-                  onClick={() => {
-                    setDateTo("");
-                    fetchDonations(true);
-                  }}
+                  onClick={() => setDateTo("")}
                   className="ml-1 hover:text-amber-600"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             )}
-
             <button
               onClick={handleResetFilters}
               className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              Clear All
+              Clear Filters
+            </button>
+            <button
+              onClick={handleResetAll}
+              className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 text-xs hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
+            >
+              Reset All
             </button>
           </div>
         )}
+
+        {/* Sort indicator */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <span className="mr-2">Sort by:</span>
+            <div className="inline-flex items-center px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-xs font-medium">
+              {sortBy === "id" && "ID"}
+              {sortBy === "donor" && "Donor Name"}
+              {sortBy === "amount" && "Amount"}
+              {sortBy === "date" && "Date & Time"}
+              {sortOrder === "asc" ? (
+                <ChevronUp className="ml-1 h-3 w-3" />
+              ) : (
+                <ChevronDown className="ml-1 h-3 w-3" />
+              )}
+              <span className="ml-1">
+                ({sortOrder === "asc" ? "Ascending" : "Descending"})
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Quick sort:
+            </span>
+            <button
+              onClick={() => {
+                setSortBy("date");
+                setSortOrder("desc");
+              }}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                sortBy === "date" && sortOrder === "desc"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              Latest First
+            </button>
+            <button
+              onClick={() => {
+                setSortBy("amount");
+                setSortOrder("desc");
+              }}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                sortBy === "amount" && sortOrder === "desc"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              Highest Amount
+            </button>
+            <button
+              onClick={() => {
+                setSortBy("donor");
+                setSortOrder("asc");
+              }}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                sortBy === "donor" && sortOrder === "asc"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              A-Z Name
+            </button>
+          </div>
+        </div>
 
         {/* Loading indicator */}
         {isLoading && (
@@ -658,7 +903,9 @@ export default function AllDonationsPage() {
             <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-6">
               <Search className="h-12 w-12 text-gray-400" />
             </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No donations found</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+              No donations found
+            </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Try adjusting your search or filter criteria
             </p>
@@ -674,35 +921,34 @@ export default function AllDonationsPage() {
         {/* Donations Table - Desktop View */}
         {!isLoading && displayedDonations.length > 0 && (
           <div className="overflow-x-auto -mx-4 md:mx-0">
-            {/* Desktop Table */}
             <table className="hidden md:table w-full text-left border-separate border-spacing-0">
               <thead>
                 <tr>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-lg">
                     <div
-                      className="flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                      className={getSortHeaderClass("id")}
                       onClick={() => toggleSort("id")}
                     >
                       ID
-                      <ArrowUpDown className={`ml-1 h-4 w-4 ${sortBy === "id" ? "text-emerald-500" : ""}`} />
+                      {getSortIcon("id")}
                     </div>
                   </th>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div
-                      className="flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                      className={getSortHeaderClass("donor")}
                       onClick={() => toggleSort("donor")}
                     >
                       Donor Name
-                      <ArrowUpDown className={`ml-1 h-4 w-4 ${sortBy === "donor" ? "text-emerald-500" : ""}`} />
+                      {getSortIcon("donor")}
                     </div>
                   </th>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div
-                      className="flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                      className={getSortHeaderClass("amount")}
                       onClick={() => toggleSort("amount")}
                     >
                       Amount
-                      <ArrowUpDown className={`ml-1 h-4 w-4 ${sortBy === "amount" ? "text-emerald-500" : ""}`} />
+                      {getSortIcon("amount")}
                     </div>
                   </th>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -713,11 +959,11 @@ export default function AllDonationsPage() {
                   </th>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div
-                      className="flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                      className={getSortHeaderClass("date")}
                       onClick={() => toggleSort("date")}
                     >
-                      Date
-                      <ArrowUpDown className={`ml-1 h-4 w-4 ${sortBy === "date" ? "text-emerald-500" : ""}`} />
+                      Date & Time
+                      {getSortIcon("date")}
                     </div>
                   </th>
                   <th className="sticky top-0 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-lg">
@@ -728,18 +974,24 @@ export default function AllDonationsPage() {
               <tbody>
                 {displayedDonations.map((donation, index) => (
                   <tr
-                    key={donation.id}
+                    key={donation._id}
                     className={`hover:bg-white/5 dark:hover:bg-gray-800/50 backdrop-blur-md transition-all group ${
-                      index % 2 === 0 ? "bg-white/2" : "bg-white/5 dark:bg-gray-800/20"
+                      index % 2 === 0
+                        ? "bg-white/2"
+                        : "bg-white/5 dark:bg-gray-800/20"
                     }`}
                   >
                     <td className="p-3 text-sm font-medium text-gray-900 dark:text-white border-b border-white/10">
                       {donation.id}
                     </td>
                     <td className="p-3 border-b border-white/10">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{donation.donor}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {donation.donor}
+                      </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {donation.email !== "N/A" ? donation.email : donation.phone}
+                        {donation.email !== "N/A"
+                          ? donation.email
+                          : donation.phone}
                       </div>
                     </td>
                     <td className="p-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 border-b border-white/10">
@@ -752,7 +1004,9 @@ export default function AllDonationsPage() {
                       <StatusBadge status={donation.status} />
                     </td>
                     <td className="p-3 text-sm text-gray-500 dark:text-gray-400 border-b border-white/10">
-                      {donation.displayDate}
+                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                        {formatDateTime(donation)}
+                      </div>
                     </td>
                     <td className="p-3 border-b border-white/10">
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
@@ -774,7 +1028,11 @@ export default function AllDonationsPage() {
                           disabled={isDeleting && deletingId === donation._id}
                         >
                           <Trash2
-                            className={`h-4 w-4 ${isDeleting && deletingId === donation._id ? "animate-pulse" : ""}`}
+                            className={`h-4 w-4 ${
+                              isDeleting && deletingId === donation._id
+                                ? "animate-pulse"
+                                : ""
+                            }`}
                           />
                         </button>
                       </div>
@@ -788,12 +1046,14 @@ export default function AllDonationsPage() {
             <div className="md:hidden space-y-3">
               {displayedDonations.map((donation) => (
                 <div
-                  key={donation.id}
+                  key={donation._id}
                   className="p-4 bg-white/5 dark:bg-gray-800/20 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/10 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <div className="text-sm font-bold text-gray-800 dark:text-white mb-1">{donation.donor}</div>
+                      <div className="text-sm font-bold text-gray-800 dark:text-white mb-1">
+                        {donation.donor}
+                      </div>
                       <div className="text-xs text-gray-500">{donation.id}</div>
                     </div>
                     <StatusBadge status={donation.status} />
@@ -801,22 +1061,27 @@ export default function AllDonationsPage() {
 
                   <div className="flex items-center justify-between mt-3">
                     <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Amount</div>
-                      <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">{donation.amount}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Amount
+                      </div>
+                      <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                        {donation.amount}
+                      </div>
                     </div>
 
                     <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Type</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Type
+                      </div>
                       <TypeBadge type={donation.type} />
                     </div>
 
                     <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Date</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Date & Time
+                      </div>
                       <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {new Date(donation.date).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatDateTime(donation)}
                       </div>
                     </div>
                   </div>
@@ -840,7 +1105,11 @@ export default function AllDonationsPage() {
                       disabled={isDeleting && deletingId === donation._id}
                     >
                       <Trash2
-                        className={`h-4 w-4 ${isDeleting && deletingId === donation._id ? "animate-pulse" : ""}`}
+                        className={`h-4 w-4 ${
+                          isDeleting && deletingId === donation._id
+                            ? "animate-pulse"
+                            : ""
+                        }`}
                       />
                     </button>
                   </div>
@@ -854,9 +1123,15 @@ export default function AllDonationsPage() {
         {!isLoading && totalItems > 0 && (
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-sm text-gray-500 dark:text-gray-400 order-2 sm:order-1">
-              Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-              <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
-              <span className="font-medium">{totalItems}</span> entries
+              Showing{" "}
+              <span className="font-medium">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, totalItems)}
+              </span>{" "}
+              of <span className="font-medium">{totalItems}</span> entries
             </div>
             <div className="flex items-center space-x-1 order-1 sm:order-2">
               <button
@@ -873,7 +1148,10 @@ export default function AllDonationsPage() {
 
               {getPageNumbers().map((page, index) =>
                 page === "ellipsis1" || page === "ellipsis2" ? (
-                  <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-500 dark:text-gray-400">
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-3 py-1 text-gray-500 dark:text-gray-400"
+                  >
                     …
                   </span>
                 ) : (
@@ -911,16 +1189,19 @@ export default function AllDonationsPage() {
       {deleteConfirmOpen && donationToDelete && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Confirm Deletion</h3>
-
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Confirm Deletion
+            </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
-              Are you sure you want to delete the donation <span className="font-semibold">{donationToDelete.id}</span> from{" "}
+              Are you sure you want to delete the donation{" "}
+              <span className="font-semibold">{donationToDelete.id}</span> from{" "}
               <span className="font-semibold">{donationToDelete.donor}</span>?
               <br />
               <br />
-              <span className="text-red-600 dark:text-red-400 text-sm">This action cannot be undone.</span>
+              <span className="text-red-600 dark:text-red-400 text-sm">
+                This action cannot be undone.
+              </span>
             </p>
-
             <div className="flex justify-end space-x-3">
               <button
                 onClick={cancelDelete}
@@ -942,7 +1223,14 @@ export default function AllDonationsPage() {
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
                       <path
                         className="opacity-75"
                         fill="currentColor"

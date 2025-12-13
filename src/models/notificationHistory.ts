@@ -15,6 +15,12 @@ const NotificationHistorySchema = new mongoose.Schema(
     imageUrl: { 
       type: String 
     },
+    buttonText: {
+      type: String
+    },
+    buttonLink: {
+      type: String
+    },
     channel: { 
       type: String, 
       required: true, 

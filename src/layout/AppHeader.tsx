@@ -3,9 +3,8 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
-import Image from "next/image";
 import Link from "next/link";
-import { useState ,useEffect,useRef} from "react";
+import React, { useState ,useEffect,useRef} from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -84,20 +83,21 @@ const AppHeader: React.FC = () => {
           </button>
 
           <Link href="/" className="lg:hidden">
-            <Image
-              width={154}
-              height={32}
-              className="dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
-            />
-            <Image
-              width={154}
-              height={32}
-              className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
-            />
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/aic-amal-logo.svg" 
+                alt="AIC Amal Logo" 
+                className="h-8 w-auto"
+              />
+              <div className="flex flex-col -space-y-1">
+                <span className="text-lg font-semibold leading-tight text-gray-900 dark:text-white">
+                  Amal App
+                </span>
+                <span className="text-xs leading-tight text-gray-600 dark:text-gray-300">
+                  Akode Islamic Centre
+                </span>
+              </div>
+            </div>
           </Link>
 
           <button

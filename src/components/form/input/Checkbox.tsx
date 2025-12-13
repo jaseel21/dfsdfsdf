@@ -1,3 +1,4 @@
+import React from "react";
 
 interface CheckboxProps {
   label?: string; // Optional label for the checkbox

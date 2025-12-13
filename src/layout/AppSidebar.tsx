@@ -1,7 +1,6 @@
 "use client";
-import  { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import {
@@ -12,12 +11,12 @@ import {
   HorizontaLDots,
   ListIcon,
   PageIcon,
-  PieChartIcon,
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
+import { useSession } from "next-auth/react";
 
 type NavItem = {
   name: string;
@@ -43,6 +42,7 @@ const navItems: NavItem[] = [
       { name: "All Donations", path: "/admin/donations/all", pro: false },
       { name: "Create Donations", path: "/admin/donations/create", pro: false },
       { name: "Generate Receipts", path: "/admin/donations/receipts", pro: false },
+      { name: "Donor Management", path: "/admin/donations/donor-management", pro: false },
     ],
   },
   {
@@ -101,13 +101,14 @@ const navItems: NavItem[] = [
   },
   {
     icon: <PageIcon />,
-    name: "Sponsorship Programs",
+    name: "Sponsorship",
     path: "/admin/sponsorships",
     subItems: [
       { name: "List Sponsors", path: "/admin/sponsorships/list", pro: false },
       { name: "Create Sponsors", path: "/admin/sponsorships/create", pro: false },
       { name: "Yatheem Sponsorships", path: "/admin/sponsorships/yatheem", pro: false },
       { name: "Hafiz Sponsorships", path: "/admin/sponsorships/hafiz", pro: false },
+      { name: "Manage Yatheem", path: "/admin/sponsorships/yatheem-list", pro: false },
     ],
   },
   {
@@ -115,9 +116,11 @@ const navItems: NavItem[] = [
     name: "Subscriptions",
     path: "/subscriptions",
     subItems: [
+      { name: "Overview", path: "/admin/subscriptions/overview", pro: false },
       { name: "List Subscriptions", path: "/admin/subscriptions/list", pro: false },
       { name: "Auto Subscriptions", path: "/admin/subscriptions/auto", pro: false },
-      { name: "Manual Sunscriptions", path: "/admin/subscriptions/manual", pro: false },
+      { name: "Manual Subscriptions", path: "/admin/subscriptions/manual", pro: false },
+      { name: "Cancelled Subscriptions", path: "/admin/subscriptions/cancelled", pro: false },
       { name: "View Logs", path: "/admin/volunteers/logs", pro: false },
     ],
   },
@@ -130,19 +133,6 @@ const navItems: NavItem[] = [
       { name: "add Volunteer", path: "/admin/volunteers/add", pro: false },
       // { name: "Track Performance", path: "/admin/volunteers/performance", pro: false },
       // { name: "View Logs", path: "/admin/volunteers/logs", pro: false },
-    ],
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Payment Receipts & Records",
-    path: "/admin/receipts",
-    subItems: [
-      { name: "List Receipts", path: "/admin/receipts/list", pro: false },
-      { name: "Download Receipts", path: "/admin/receipts/download", pro: false },
-      { name: "Print Receipts", path: "/admin/receipts/print", pro: false },
     ],
   },
   {
@@ -158,6 +148,20 @@ const othersItems: NavItem[] = [
       // { name: "Generate Reports", path: "/admin/boxes/allreports", pro: false },
     ],
   },
+];
+
+const othersItems: NavItem[] = [
+  // {
+  //   icon: <PieChartIcon />,
+  //   name: "Payment Receipts & Records",
+  //   path: "/admin/receipts",
+  //   subItems: [
+  //     { name: "List Receipts", path: "/admin/receipts/list", pro: false },
+  //     { name: "Download Receipts", path: "/admin/receipts/download", pro: false },
+  //     { name: "Print Receipts", path: "/admin/receipts/print", pro: false },
+  //   ],
+  // },
+  
   // {
   //   icon: <BoxCubeIcon />,
   //   name: "Box Collection & Tracking",
@@ -182,24 +186,99 @@ const othersItems: NavItem[] = [
     path: "/admin/settings",
     subItems: [
       { name: "User Management", path: "/admin/settings/users", pro: false },
-      { name: "Role Permissions", path: "/admin/settings/roles", pro: false },
-      { name: "System Settings", path: "/admin/settings/system", pro: false },
+      // { name: "Role Permissions", path: "/admin/settings/roles", pro: false },
+      // { name: "System Settings", path: "/admin/settings/system", pro: false },
     ],
   },
-  {
-    icon: <PieChartIcon />,
-    name: "Reports",
-    path: "/admin/reports",
-    subItems: [
-      { name: "Generate Reports", path: "/admin/reports/generate", pro: false },
-      { name: "Export Reports", path: "/admin/reports/export", pro: false },
-    ],
-  },
+  // {
+  //   icon: <PieChartIcon />,
+  //   name: "Reports",
+  //   path: "/admin/reports",
+  //   subItems: [
+  //     { name: "Generate Reports", path: "/admin/reports/generate", pro: false },
+  //     { name: "Export Reports", path: "/admin/reports/export", pro: false },
+  //   ],
+  // },
 ];
+
+const permissionMap: Record<string, string> = {
+  // Dashboard
+  "/admin": "dashboard_overview",
+  // Donation
+  "/admin/donations/all": "donation_all",
+  "/admin/donations/create": "donation_create",
+  "/admin/donations/receipts": "donation_receipts",
+  "/admin/donations/donor-management": "donation_management",
+  // Campaigns
+  "/admin/campaigns/ongoing": "campaigns_ongoing",
+  "/admin/campaigns/upcoming": "campaigns_all",
+  "/admin/campaigns/create": "campaigns_create",
+  // Photo Framing
+  "/admin/photoframing/all": "photoframing_all",
+  "/admin/photoframing/create": "photoframing_create",
+  "/admin/photoframing": "photoframing_track",
+  // Daily Status
+  "/admin/social-status/all": "status_all",
+  "/admin/social-status/create": "status_create",
+  "/admin/social-status": "status_track",
+  // Institutions
+  "/admin/institutions/list": "institutions_list",
+  "/admin/institutions/add": "institutions_add",
+  // Notification System
+  "/admin/notifications/create-template": "notifications_templates",
+  "/admin/notifications/send-notifications": "notifications_send",
+  "/admin/notifications/track-notifications": "notifications_track",
+  // Sponsorship Programs
+  "/admin/sponsorships/list": "sponsorships_list",
+  "/admin/sponsorships/create": "sponsorships_create",
+  "/admin/sponsorships/yatheem": "sponsorships_yatheem",
+  "/admin/sponsorships/hafiz": "sponsorships_hafiz",
+  "/admin/sponsorships/yatheem-list": "sponsorships_yatheem_list",
+  "/admin/sponsorships/yatheem/": "sponsorships_yatheem_detail",
+  // Subscriptions
+  "/admin/subscriptions/overview": "subscriptions_overview",
+  "/admin/subscriptions/list": "subscriptions_list",
+  "/admin/subscriptions/auto": "subscriptions_auto",
+  "/admin/subscriptions/manual": "subscriptions_manual",
+  "/admin/volunteers/logs": "subscriptions_logs",
+  // Volunteers
+  "/admin/volunteers/list": "volunteers_list",
+  "/admin/volunteers/add": "volunteers_add",
+  // Box Holders
+  "/admin/boxes/allbox": "boxholders_all",
+  "/admin/boxes/addbox": "boxholders_add",
+  "/admin/boxes/csvimport": "boxholders_csv",
+  // Backup & Restore
+  "/admin/backup": "backup_restore",
+  // Settings
+  "/admin/settings/users": "settings_users",
+};
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const { data: session } = useSession();
+  console.log("Sidebar session:", session);
+  const user = session?.user as { role?: string; permissions?: string[] } | undefined;
+  const isSuperAdmin = user?.role === "Super Admin";
+  const userPermissions = isSuperAdmin ? null : user?.permissions || [];
+
+  // Helper to filter navItems/subItems by permissions
+  function filterNavItems(items: NavItem[]): NavItem[] {
+    if (isSuperAdmin) return items; // Super Admin: show all
+    if (!userPermissions || userPermissions.length === 0) return []; // No permissions: show nothing
+    return items
+      .map((nav) => {
+        if (!nav.subItems) return null;
+        const filteredSub = nav.subItems.filter((sub) => {
+          const permKey = permissionMap[sub.path];
+          return userPermissions.includes(permKey);
+        });
+        if (filteredSub.length === 0) return null;
+        return { ...nav, subItems: filteredSub };
+      })
+      .filter(Boolean) as NavItem[];
+  }
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -234,14 +313,14 @@ const AppSidebar: React.FC = () => {
                 <span className={`menu-item-text`}>{nav.name}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                  }`}
-                />
+                <span className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                  openSubmenu?.type === menuType &&
+                  openSubmenu?.index === index
+                    ? "rotate-180 text-brand-500"
+                    : ""
+                }`}>
+                  <ChevronDownIcon />
+                </span>
               )}
             </button>
           ) : (
@@ -405,28 +484,26 @@ const AppSidebar: React.FC = () => {
       >
         <Link href="/">
           {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <Image
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/aic-amal-logo.svg" 
+                alt="AIC Amal Logo" 
+                className="h-8 w-auto"
               />
-              <Image
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
+              <div className="flex flex-col -space-y-1">
+                <span className="text-lg font-semibold leading-tight text-gray-900 dark:text-white">
+                  Amal App
+                </span>
+                <span className="text-xs leading-tight text-gray-600 dark:text-gray-300">
+                  Akode Islamic Centre
+                </span>
+              </div>
+            </div>
           ) : (
-            <Image
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
+            <img 
+              src="/aic-amal-logo.svg" 
+              alt="AIC Amal Logo" 
+              className="h-7 w-auto"
             />
           )}
         </Link>
@@ -448,7 +525,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filterNavItems(navItems), "main")}
             </div>
 
             <div className="">
@@ -465,7 +542,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(filterNavItems(othersItems), "others")}
             </div>
           </div>
         </nav>

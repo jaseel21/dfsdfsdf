@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import connectToDatabase from "../../../../lib/db";
 // import NotificationTemplate from "../../../../models/notificationTemplate";
 import NotificationHistory from "../../../../models/notificationHistory";
+import Notification from "../../../../models/notification"; // You may need to create this model
 import { Expo } from "expo-server-sdk";
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';
@@ -84,7 +85,19 @@ export async function POST(request) {
         // Add channel-specific fields
         if (body.channel === 'push') {
             notificationData.title = body.title;
-            notificationData.imageUrl = body.imageUrl;
+            
+            // Only add imageUrl if it exists and is not empty
+            if (body.imageUrl && body.imageUrl.trim()) {
+                notificationData.imageUrl = body.imageUrl.trim();
+            }
+            
+            // Only add button fields if they exist and are not empty
+            if (body.buttonText && body.buttonText.trim()) {
+                notificationData.buttonText = body.buttonText.trim();
+                if (body.buttonLink && body.buttonLink.trim()) {
+                    notificationData.buttonLink = body.buttonLink.trim();
+                }
+            }
         } else if (body.channel === 'email') {
             notificationData.subject = body.subject;
         }
@@ -99,6 +112,18 @@ export async function POST(request) {
         // Create notification history record
         const notificationHistory = new NotificationHistory(notificationData);
         await notificationHistory.save();
+
+        // Save to "notifications" collection
+        try {
+            const notificationDoc = new Notification({
+                ...notificationData,
+                historyId: notificationHistory._id, // Optional: link to history
+                createdAt: new Date(),
+            });
+            await notificationDoc.save();
+        } catch (err) {
+            console.error("Error saving to notifications collection:", err);
+        }
 
         // If scheduled for later, return success and don't send now
         if (body.scheduledFor) {
@@ -206,16 +231,35 @@ async function sendPushNotification(data, notificationRecord) {
         const expo = new Expo();
 
         // Create messages
-        const messages = pushTokens.map(token => ({
-            to: token,
-            sound: "default",
-            title: data.title,
-            body: data.body,
-            data: { screen: "Notification", notificationId: notificationRecord._id.toString() },
-            priority: "high",
-            channelId: "default",
-            ...(data.imageUrl && { image: data.imageUrl })
-        }));
+        const messages = pushTokens.map(token => {
+            const message = {
+                to: token,
+                sound: "default",
+                title: data.title,
+                body: data.body,
+                data: {
+                    screen: "Notification",
+                    notificationId: notificationRecord._id.toString()
+                },
+                priority: "high",
+                channelId: "default"
+            };
+
+            // Add image URL in data object (as per your Postman example)
+            if (data.imageUrl && data.imageUrl.trim()) {
+                message.data.imageUrl = data.imageUrl.trim();
+            }
+
+            // Add button configuration in data object (as per your Postman example)
+            if (data.buttonText && data.buttonText.trim()) {
+                message.data.buttonText = data.buttonText.trim();
+                if (data.buttonLink && data.buttonLink.trim()) {
+                    message.data.buttonLink = data.buttonLink.trim();
+                }
+            }
+
+            return message;
+        });
 
         // Chunk and send notifications
         const chunks = expo.chunkPushNotifications(messages);

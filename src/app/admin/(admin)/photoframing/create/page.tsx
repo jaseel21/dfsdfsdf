@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { useFrameStore } from "@/store/frameStore";
 import { Frame } from "@/lib/types";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define types (unchanged)
 interface PlacementCoords {
@@ -169,6 +171,9 @@ const CanvasContainer: React.FC<CanvasContainerProps> = ({
 export default function CreateFramePage() {
   const router = useRouter();
   const { addFrame } = useFrameStore() as FrameStore;
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("photoframing_create");
 
   const [defaultSizes] = useState<DefaultSizes>({
     image: {
@@ -224,6 +229,237 @@ export default function CreateFramePage() {
   useEffect(() => {
     console.log("fileInputRef:", fileInputRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!canvasRef.current || !previewImage) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = editorData.dimensions.width;
+    canvas.height = editorData.dimensions.height;
+
+    const handleSize = 10;
+
+    const drawHandle = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      color: string
+    ) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        x - handleSize / 2,
+        y - handleSize / 2,
+        handleSize,
+        handleSize
+      );
+    };
+
+    const img = new Image();
+    img.src = previewImage;
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(59, 130, 246, 0.3)";
+      ctx.fillRect(
+        editorData.placementCoords.x,
+        editorData.placementCoords.y,
+        editorData.placementCoords.width,
+        editorData.placementCoords.height
+      );
+
+      ctx.strokeStyle = "rgba(37, 99, 235, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        editorData.placementCoords.x,
+        editorData.placementCoords.y,
+        editorData.placementCoords.width,
+        editorData.placementCoords.height
+      );
+
+      ctx.fillStyle = "rgba(16, 185, 129, 0.3)";
+      ctx.fillRect(
+        editorData.textSettings.x,
+        editorData.textSettings.y,
+        editorData.textSettings.width,
+        editorData.textSettings.height
+      );
+
+      ctx.strokeStyle = "rgba(5, 150, 105, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        editorData.textSettings.x,
+        editorData.textSettings.y,
+        editorData.textSettings.width,
+        editorData.textSettings.height
+      );
+
+      ctx.font = `${editorData.textSettings.size}px ${editorData.textSettings.font}`;
+      ctx.fillStyle = editorData.textSettings.color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const textX = editorData.textSettings.x + editorData.textSettings.width / 2;
+      const textY = editorData.textSettings.y + editorData.textSettings.height / 2;
+      ctx.fillText(sampleText, textX, textY);
+
+      const imageHandleColor = "rgba(37, 99, 235, 1)";
+      drawHandle(
+        ctx,
+        editorData.placementCoords.x,
+        editorData.placementCoords.y,
+        imageHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.placementCoords.x + editorData.placementCoords.width,
+        editorData.placementCoords.y,
+        imageHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.placementCoords.x,
+        editorData.placementCoords.y + editorData.placementCoords.height,
+        imageHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.placementCoords.x + editorData.placementCoords.width,
+        editorData.placementCoords.y + editorData.placementCoords.height,
+        imageHandleColor
+      );
+
+      const textHandleColor = "rgba(5, 150, 105, 1)";
+      drawHandle(
+        ctx,
+        editorData.textSettings.x,
+        editorData.textSettings.y,
+        textHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.textSettings.x + editorData.textSettings.width,
+        editorData.textSettings.y,
+        textHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.textSettings.x,
+        editorData.textSettings.y + editorData.textSettings.height,
+        textHandleColor
+      );
+      drawHandle(
+        ctx,
+        editorData.textSettings.x + editorData.textSettings.width,
+        editorData.textSettings.y + editorData.textSettings.height,
+        textHandleColor
+      );
+
+      if (showGrid) {
+        ctx.strokeStyle = "rgba(128, 128, 128, 0.3)";
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x < canvas.width; x += 100) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+
+        for (let y = 0; y < canvas.height; y += 100) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+      }
+    };
+  }, [previewImage, editorData, showGrid, sampleText]);
+
+  useEffect(() => {
+    if (!previewCanvasRef.current || !previewImage) return;
+
+    const canvas = previewCanvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = editorData.dimensions.width;
+    canvas.height = editorData.dimensions.height;
+
+    const renderPreview = () => {
+      setIsLoading(true);
+
+      const frameImg = new Image();
+      frameImg.src = previewImage;
+
+      const userImg = new Image();
+      userImg.src = "/api/placeholder/400/400";
+
+      frameImg.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+        userImg.onload = () => {
+          ctx.drawImage(
+            userImg,
+            editorData.placementCoords.x,
+            editorData.placementCoords.y,
+            editorData.placementCoords.width,
+            editorData.placementCoords.height
+          );
+
+          ctx.font = `${editorData.textSettings.size}px ${editorData.textSettings.font}`;
+          ctx.fillStyle = editorData.textSettings.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          const textX = editorData.textSettings.x + editorData.textSettings.width / 2;
+          const textY = editorData.textSettings.y + editorData.textSettings.height / 2;
+
+          ctx.fillText(sampleText, textX, textY);
+
+          setIsLoading(false);
+        };
+
+        userImg.onerror = () => {
+          ctx.fillStyle = "rgba(128, 128, 128, 0.5)";
+          ctx.fillRect(
+            editorData.placementCoords.x,
+            editorData.placementCoords.y,
+            editorData.placementCoords.width,
+            editorData.placementCoords.height
+          );
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "14px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            "Sample User Image",
+            editorData.placementCoords.x + editorData.placementCoords.width / 2,
+            editorData.placementCoords.y + editorData.placementCoords.height / 2
+          );
+
+          setIsLoading(false);
+        };
+      };
+
+      frameImg.onerror = () => {
+        setIsLoading(false);
+        console.error("Failed to load frame image");
+      };
+    };
+
+    renderPreview();
+  }, [previewImage, editorData, sampleText]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   const resetToDefaults = () => {
     const frameWidth = editorData.dimensions.width;
@@ -351,265 +587,6 @@ export default function CreateFramePage() {
       setErrors({ ...errors, frameImage: "Failed to process image dimensions" });
     }
   };
-
-  useEffect(() => {
-    if (!canvasRef.current || !previewImage) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = editorData.dimensions.width;
-    canvas.height = editorData.dimensions.height;
-
-    const handleSize = 10;
-
-    const drawHandle = (
-      ctx: CanvasRenderingContext2D,
-      x: number,
-      y: number,
-      color: string
-    ) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(
-        x - handleSize / 2,
-        y - handleSize / 2,
-        handleSize,
-        handleSize
-      );
-    };
-
-    const img = new Image();
-    img.src = previewImage;
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(59, 130, 246, 0.3)";
-      ctx.fillRect(
-        editorData.placementCoords.x,
-        editorData.placementCoords.y,
-        editorData.placementCoords.width,
-        editorData.placementCoords.height
-      );
-
-      ctx.strokeStyle = "rgba(37, 99, 235, 0.8)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        editorData.placementCoords.x,
-        editorData.placementCoords.y,
-        editorData.placementCoords.width,
-        editorData.placementCoords.height
-      );
-
-      ctx.fillStyle = "rgba(16, 185, 129, 0.3)";
-      ctx.fillRect(
-        editorData.textSettings.x,
-        editorData.textSettings.y,
-        editorData.textSettings.width,
-        editorData.textSettings.height
-      );
-
-      ctx.strokeStyle = "rgba(5, 150, 105, 0.8)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        editorData.textSettings.x,
-        editorData.textSettings.y,
-        editorData.textSettings.width,
-        editorData.textSettings.height
-      );
-
-      ctx.font = `${editorData.textSettings.size}px ${editorData.textSettings.font}`;
-      ctx.fillStyle = editorData.textSettings.color;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const textX = editorData.textSettings.x + editorData.textSettings.width / 2;
-      const textY = editorData.textSettings.y + editorData.textSettings.height / 2;
-      ctx.fillText(sampleText, textX, textY);
-
-      const imageHandleColor = "rgba(37, 99, 235, 1)";
-      drawHandle(
-        ctx,
-        editorData.placementCoords.x,
-        editorData.placementCoords.y,
-        imageHandleColor
-      );
-      drawHandle(
-        ctx,
-        editorData.placementCoords.x + editorData.placementCoords.width,
-        editorData.placementCoords.y,
-        imageHandleColor
-      );
-      drawHandle(
-        ctx,
-        editorData.placementCoords.x,
-        editorData.placementCoords.y + editorData.placementCoords.height,
-        imageHandleColor
-      );
-      drawHandle(
-        ctx,
-        editorData.placementCoords.x + editorData.placementCoords.width,
-        editorData.placementCoords.y + editorData.placementCoords.height,
-        imageHandleColor
-      );
-
-      const textHandleColor = "rgba(5, 150, 105, 1)";
-      drawHandle(ctx, editorData.textSettings.x, editorData.textSettings.y, textHandleColor);
-      drawHandle(
-        ctx,
-        editorData.textSettings.x + editorData.textSettings.width,
-        editorData.textSettings.y,
-        textHandleColor
-      );
-      drawHandle(
-        ctx,
-        editorData.textSettings.x,
-        editorData.textSettings.y + editorData.textSettings.height,
-        textHandleColor
-      );
-      drawHandle(
-        ctx,
-        editorData.textSettings.x + editorData.textSettings.width,
-        editorData.textSettings.y + editorData.textSettings.height,
-        textHandleColor
-      );
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "12px 'Inter', system-ui, sans-serif";
-
-      ctx.fillStyle = "rgba(37, 99, 235, 0.9)";
-      ctx.fillRect(editorData.placementCoords.x, editorData.placementCoords.y, 80, 20);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(
-        "Image Area",
-        editorData.placementCoords.x + 6,
-        editorData.placementCoords.y + 14
-      );
-
-      ctx.fillStyle = "rgba(5, 150, 105, 0.9)";
-      ctx.fillRect(editorData.textSettings.x, editorData.textSettings.y, 70, 20);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(
-        "Text Area",
-        editorData.textSettings.x + 6,
-        editorData.textSettings.y + 14
-      );
-
-      if (showGrid) {
-        ctx.strokeStyle = "rgba(156, 163, 175, 0.2)";
-        ctx.lineWidth = 1;
-
-        for (let x = 0; x < canvas.width; x += 50) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
-          ctx.stroke();
-        }
-
-        for (let y = 0; y < canvas.height; y += 50) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(canvas.width, y);
-          ctx.stroke();
-        }
-
-        ctx.strokeStyle = "rgba(156, 163, 175, 0.4)";
-        for (let x = 0; x < canvas.width; x += 100) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
-          ctx.stroke();
-        }
-
-        for (let y = 0; y < canvas.height; y += 100) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(canvas.width, y);
-          ctx.stroke();
-        }
-      }
-    };
-  }, [previewImage, editorData, showGrid, sampleText]);
-
-  useEffect(() => {
-    if (!previewCanvasRef.current || !previewImage) return;
-
-    const canvas = previewCanvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = editorData.dimensions.width;
-    canvas.height = editorData.dimensions.height;
-
-    const renderPreview = () => {
-      setIsLoading(true);
-
-      const frameImg = new Image();
-      frameImg.src = previewImage;
-
-      const userImg = new Image();
-      userImg.src = "/api/placeholder/400/400";
-
-      frameImg.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-
-        userImg.onload = () => {
-          ctx.drawImage(
-            userImg,
-            editorData.placementCoords.x,
-            editorData.placementCoords.y,
-            editorData.placementCoords.width,
-            editorData.placementCoords.height
-          );
-
-          ctx.font = `${editorData.textSettings.size}px ${editorData.textSettings.font}`;
-          ctx.fillStyle = editorData.textSettings.color;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-
-          const textX = editorData.textSettings.x + editorData.textSettings.width / 2;
-          const textY = editorData.textSettings.y + editorData.textSettings.height / 2;
-
-          ctx.fillText(sampleText, textX, textY);
-
-          setIsLoading(false);
-        };
-
-        userImg.onerror = () => {
-          ctx.fillStyle = "rgba(128, 128, 128, 0.5)";
-          ctx.fillRect(
-            editorData.placementCoords.x,
-            editorData.placementCoords.y,
-            editorData.placementCoords.width,
-            editorData.placementCoords.height
-          );
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "14px Arial";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(
-            "Sample User Image",
-            editorData.placementCoords.x + editorData.placementCoords.width / 2,
-            editorData.placementCoords.y + editorData.placementCoords.height / 2
-          );
-
-          setIsLoading(false);
-        };
-      };
-
-      frameImg.onerror = () => {
-        setIsLoading(false);
-        console.error("Failed to load frame image");
-      };
-    };
-
-    renderPreview();
-  }, [previewImage, editorData, sampleText]);
 
   const getCursorStyle = (): string => {
     if (isDraggingImage || isDraggingText) {

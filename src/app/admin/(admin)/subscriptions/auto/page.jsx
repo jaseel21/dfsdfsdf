@@ -1,10 +1,12 @@
 "use client";
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, User, AlertCircle, RefreshCcw, ChevronLeft, ChevronRight,
   Search, Download, Eye, BarChart2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Helper function to determine payment status
 function getPaymentStatus(period, lastPaymentAt) {
@@ -34,6 +36,12 @@ function getPaymentStatus(period, lastPaymentAt) {
 }
 
 export default function AutoSubscriptionsPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user?.permissions?.includes("subscriptions_auto") || session?.user?.permissions?.includes("*"));
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -145,36 +153,36 @@ export default function AutoSubscriptionsPage() {
 
   const formatDate = (date) => (typeof window !== "undefined" ? new Date(date).toLocaleDateString() : date);
 
-  if (isLoading) return <div className="flex justify-center items-center min-h-screen bg-gray-50"><div className="animate-spin w-12 h-12 border-4 border-t-emerald-500 rounded-full" /></div>;
+  if (isLoading) return <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900"><div className="animate-spin w-12 h-12 border-4 border-t-emerald-500 rounded-full" /></div>;
   if (error) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
       <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-      <p>{error}</p>
-      <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded flex items-center">
+      <p className="text-gray-900 dark:text-white">{error}</p>
+      <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded flex items-center hover:bg-emerald-600">
         <RefreshCcw className="h-4 w-4 mr-2" /> Retry
       </button>
     </div>
   );
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
-      <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border">
+    <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border dark:border-gray-700">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
           <User className="mr-3 h-6 w-6 text-emerald-500" /> Auto Subscriptions
         </h2>
-        <Link href="/admin/subscriptions" className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border hover:bg-gray-100 flex items-center">
+        <Link href="/admin/subscriptions" className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center transition-colors">
           <ArrowLeft className="h-4 w-4 mr-2" /> All Subscriptions
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border dark:border-gray-700">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-grow md:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name or phone..."
-              className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="pl-10 pr-4 py-2 w-full border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -183,7 +191,7 @@ export default function AutoSubscriptionsPage() {
             <select
               value={paymentStatusFilter}
               onChange={(e) => setPaymentStatusFilter(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Payment Status</option>
               <option value="paid">Paid</option>
@@ -192,7 +200,7 @@ export default function AutoSubscriptionsPage() {
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Periods</option>
               <option value="daily">Daily</option>
@@ -200,15 +208,15 @@ export default function AutoSubscriptionsPage() {
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
             </select>
-            <button onClick={exportToCSV} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center">
+            <button onClick={exportToCSV} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center transition-colors">
               <Download className="h-4 w-4 mr-2" /> Export
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="min-w-full divide-y">
-            <thead className="bg-gray-50 dark:bg-gray-800">
+        <div className="overflow-x-auto rounded-lg border dark:border-gray-600">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 {[
                   { key: "_id", label: "ID" },
@@ -223,7 +231,7 @@ export default function AutoSubscriptionsPage() {
                 ].map((col) => (
                   <th
                     key={col.key || col.label}
-                    className="px-4 py-3 text-left text-xs font-medium uppercase cursor-pointer"
+                    className="px-4 py-3 text-left text-xs font-medium uppercase cursor-pointer text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                     onClick={col.key ? () => requestSort(col.key) : undefined}
                   >
                     {col.label} {col.key && getSortIndicator(col.key)}
@@ -231,30 +239,32 @@ export default function AutoSubscriptionsPage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
               {currentItems.map((sub) => (
-                <tr key={sub._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-4 py-3 text-sm">{sub._id}</td>
-                  <td className="px-4 py-3 text-sm">{sub.name}</td>
-                  <td className="px-4 py-3 text-sm">{sub.phone}</td>
-                  <td className="px-4 py-3 text-sm">₹{sub.amount.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm">{sub.period}</td>
+                <tr key={sub._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{sub._id}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{sub.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{sub.phone}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">₹{sub.amount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{sub.period}</td>
                   <td className="px-4 py-3 text-sm">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        sub.paymentStatus === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                        sub.paymentStatus === "paid" 
+                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" 
+                          : "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-white"
                       }`}
                     >
                       {sub.paymentStatus}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm">{formatDate(sub.lastPaymentAt)}</td>
-                  <td className="px-4 py-3 text-sm">{sub.razorpaySubscriptionId || "N/A"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{formatDate(sub.lastPaymentAt)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{sub.razorpaySubscriptionId || "N/A"}</td>
                   <td className="px-4 py-3 text-sm flex space-x-3">
-                    <Link href={`/admin/subscriptions/details?donorId=${sub.donorId}&subscriptionId=${sub._id}`} className="text-blue-600 hover:text-blue-800">
+                    <Link href={`/admin/subscriptions/details?donorId=${sub.donorId}&subscriptionId=${sub._id}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
                       <Eye className="h-5 w-5" />
                     </Link>
-                    <Link href={`/admin/subscriptions/history/${sub._id}`} className="text-purple-600 hover:text-purple-800">
+                    <Link href={`/admin/subscriptions/history/${sub._id}`} className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors">
                       <BarChart2 className="h-5 w-5" />
                     </Link>
                   </td>
@@ -265,13 +275,13 @@ export default function AutoSubscriptionsPage() {
         </div>
 
         {filteredSubscriptions.length > 0 && (
-          <div className="flex justify-between items-center mt-6">
+          <div className="flex justify-between items-center mt-6 text-gray-700 dark:text-gray-300">
             <span>Page {currentPage} of {totalPages}</span>
             <div className="flex space-x-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg disabled:text-gray-300 hover:bg-gray-100"
+                className="p-2 rounded-lg disabled:text-gray-300 dark:disabled:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -281,7 +291,11 @@ export default function AutoSubscriptionsPage() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`px-3 py-1 rounded ${currentPage === pageNum ? "bg-emerald-500 text-white" : "hover:bg-gray-100"}`}
+                    className={`px-3 py-1 rounded transition-colors ${
+                      currentPage === pageNum 
+                        ? "bg-emerald-500 text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }`}
                   >
                     {pageNum}
                   </button>
@@ -290,7 +304,7 @@ export default function AutoSubscriptionsPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg disabled:text-gray-300 hover:bg-gray-100"
+                className="p-2 rounded-lg disabled:text-gray-300 dark:disabled:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>

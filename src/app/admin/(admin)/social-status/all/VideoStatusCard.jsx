@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Film, Eye, EyeOff, Star, Play, Clock, Folder } from "lucide-react";
 import VideoThumbnail from "./VideoThumbnail";
 

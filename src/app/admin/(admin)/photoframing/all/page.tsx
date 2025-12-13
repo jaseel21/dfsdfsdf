@@ -1,6 +1,6 @@
 "use client";
 
-import  { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import NextImage from "next/image";
 import { 
@@ -16,8 +16,14 @@ import {
 } from "lucide-react";
 import { useFrameStore } from "@/store/frameStore";
 import { Frame } from "@/lib/types";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function AllFramesPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("photoframing_all");
+  
   const { 
     frames, 
     fetchFrames, 
@@ -49,6 +55,9 @@ export default function AllFramesPage() {
       console.error('Failed to toggle frame status', err);
     }
   };
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   return (
     <div className="p-4 md:p-6 space-y-6">

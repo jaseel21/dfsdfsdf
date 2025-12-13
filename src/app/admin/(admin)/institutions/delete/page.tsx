@@ -1,6 +1,6 @@
 // src/app/(admin)/institutions/delete/page.tsx
 "use client";
-
+import React from "react";
 
 export default function DeleteInstitutionPage() {
   return (

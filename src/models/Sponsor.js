@@ -1,22 +1,23 @@
 import mongoose from "mongoose";
 
 const SponsorSchema = new mongoose.Schema({
-  amount: { type: Number, required: true },
-  name: { type: String, required: true },
+  selectedAmount: { type: Number, required: true }, // Selected sponsorship amount
+  paidAmount: { type: Number, default: 0 }, // Raised amount
+  method: { type: String, enum: ["Complete", "Split"], default: "Split" }, // Payment method
+  name: { type: String },
   phone: { type: String, required: true },
-  type: { type: String, enum: ["Sponsor-Yatheem", "Sponsor-Hafiz"]},
-  // program: { type: String, required: true },
-  email: { type: String},
-  period: { type: String, required: true }, 
-  district: { type: String, required: true },
-  panchayat: { type: String, required: true },
-  status:{type:String,required:true,default:"Completed"},
-  razorpayPaymentId: { type: String, required: true },
-  razorpayOrderId: { type: String, required: true },
-  razorpaySignature: { type: String,  },
+  type: { type: String, enum: ["Sponsor-Yatheem", "Sponsor-Hafiz"], required: true },
+  email: { type: String },
+  period: { type: String, required: true },
+  district: { type: String },
+  panchayat: { type: String },
+  status: { type: String, required: true, default: "Pending" }, // Pending, Partial, Completed
+  yatheemId: { type: mongoose.Schema.Types.ObjectId, ref: "Yatheem" }, // Reference to assigned yatheem
+  userId: { type: String }, // User identifier for dashboard access
   createdAt: { type: Date, default: Date.now },
-}, { 
-  collection: "donations" // Explicitly set the collection name
+  updatedAt: { type: Date, default: Date.now },
 });
 
+
 export default mongoose.models.Sponsor || mongoose.model("Sponsor", SponsorSchema);
+

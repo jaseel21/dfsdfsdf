@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image"; // Added import for Next.js Image
 import {
@@ -16,8 +16,14 @@ import {
   Heart,
   AlertCircle,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function OngoingCampaignsPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || session?.user?.permissions?.includes("campaigns_ongoing");
+
   const [searchText, setSearchText] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [sortBy, setSortBy] = useState("endDate");
@@ -129,6 +135,9 @@ export default function OngoingCampaignsPage() {
     }
     return "/api/placeholder/800/400";
   };
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   return (
     <div className="p-4 md:p-6 space-y-6 min-h-screen">

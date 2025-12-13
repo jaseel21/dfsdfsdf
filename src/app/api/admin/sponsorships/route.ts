@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import connectToDatabase from '@/lib/db';
 import Sponsor from '@/models/Sponsor';
 import { FilterQuery } from 'mongoose';
 
@@ -19,7 +19,7 @@ interface Sponsor {
 // GET handler to fetch all sponsorships
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Get query parameters
     const searchParams = req.nextUrl.searchParams;
@@ -71,12 +71,27 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Fetch sponsorships from database
+    // Fetch sponsorships from database with yatheem population
     const sponsorships = await Sponsor.find(query)
+      .populate('yatheemId', 'name phone place class school')
       .sort({ paymentDate: -1 }) // Default sort by payment date descending
       .lean();
 
-    return NextResponse.json(sponsorships);
+    // Transform the data to include yatheem info
+    const transformedSponsorships = sponsorships.map((sponsor: any) => ({
+      ...sponsor,
+      yatheemId: sponsor.yatheemId ? sponsor.yatheemId._id?.toString() : null,
+      yatheem: sponsor.yatheemId ? {
+        _id: sponsor.yatheemId._id?.toString(),
+        name: sponsor.yatheemId.name,
+        phone: sponsor.yatheemId.phone,
+        place: sponsor.yatheemId.place,
+        class: sponsor.yatheemId.class,
+        school: sponsor.yatheemId.school,
+      } : null,
+    }));
+
+    return NextResponse.json(transformedSponsorships);
   } catch (error) {
     console.error('Error fetching sponsorships:', error);
     return NextResponse.json(
@@ -101,7 +116,7 @@ interface SponsorCreateRequest {
 // POST handler to create a new sponsorship
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const data = (await req.json()) as SponsorCreateRequest;
 

@@ -31,7 +31,7 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
   const getRaisedLabel = (type: string, raised: number) => {
     return type === "physical" ? `${raised.toLocaleString()} items` : `₹${raised.toLocaleString()}`;
   };
-
+  
   const getGoalLabel = (type: string, goal: number | null | undefined, isInfinite: boolean) => {
     if (isInfinite) {
       return type === "physical" ? "Infinite Items" : "Infinite Amount";
@@ -39,8 +39,8 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
       if (goal === undefined || goal === null) {
         return "No Goal Set";
       }
-      return type === "physical"
-        ? `${goal.toLocaleString()} items`
+      return type === "physical" 
+        ? `${goal.toLocaleString()} items` 
         : `₹${goal.toLocaleString()}`;
     }
   };
@@ -49,7 +49,7 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
     <motion.div
       variants={{
         hidden: { y: 30, opacity: 0 },
-        visible: { y: 0, opacity: 1, transition: { type: "spring" as const, stiffness: 70, damping: 12 } },
+        visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 70, damping: 12 } },
       }}
       className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${isActive ? "ring-2 ring-purple-400 dark:ring-purple-600" : ""} group`}
     >
@@ -65,12 +65,13 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute top-4 right-4 z-30">
           <div
-            className={`px-3 py-1 rounded-full text-xs font-medium shadow-md backdrop-blur-sm ${campaign.type === "fundraising"
+            className={`px-3 py-1 rounded-full text-xs font-medium shadow-md backdrop-blur-sm ${
+              campaign.type === "fundraising"
                 ? "bg-purple-900/90 text-white dark:bg-purple-700/90"
                 : campaign.type === "physical"
-                  ? "bg-indigo-900/90 text-white dark:bg-indigo-700/90"
-                  : "bg-green-900/90 text-white dark:bg-green-700/90"
-              }`}
+                ? "bg-indigo-900/90 text-white dark:bg-indigo-700/90"
+                : "bg-green-900/90 text-white dark:bg-green-700/90"
+            }`}
           >
             {getTypeLabel(campaign.type)}
           </div>
@@ -90,41 +91,43 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
 
       <div className="relative z-30 -mt-5 mx-4">
         <div
-          className={`bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-md border ${campaign.type === "fundraising" ? "border-purple-200 dark:border-purple-700" : campaign.type === "physical" ? "border-indigo-200 dark:border-indigo-700" : "border-green-200 dark:border-green-700"
-            }`}
+          className={`bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-md border ${
+            campaign.type === "fundraising" ? "border-purple-200 dark:border-purple-700" : campaign.type === "physical" ? "border-indigo-200 dark:border-indigo-700" : "border-green-200 dark:border-green-700"
+          }`}
         >
           <div className="flex justify-between text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
             <div className="flex flex-col">
               <span className="text-gray-500 dark:text-gray-400">Raised</span>
               <span className="text-base font-bold text-gray-900 dark:text-gray-100">{getRaisedLabel(campaign.type, campaign.raised)}</span>
             </div>
-
+            
             <div className="text-right flex flex-col">
               <span className="text-gray-500 dark:text-gray-400">Goal</span>
               <span className="text-base font-bold text-gray-900 dark:text-gray-100">{getGoalLabel(campaign.type, campaign.goal, campaign.isInfinite)}</span>
             </div>
           </div>
-
-          {!campaign.isInfinite === true &&
-            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${getPercentage(campaign.raised, campaign.goal, campaign.isInfinite)}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className={`h-full rounded-full ${campaign.type === "fundraising"
-                    ? "bg-gradient-to-r from-purple-600 to-purple-400 dark:from-purple-500 dark:to-purple-300"
-                    : campaign.type === "physical"
-                      ? "bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-500 dark:to-indigo-300"
-                      : "bg-gradient-to-r from-green-600 to-green-400 dark:from-green-500 dark:to-green-300"
-                  }`}
-              />
-            </div>
+          
+          {!campaign.isInfinite===true &&
+          <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${getPercentage(campaign.raised, campaign.goal, campaign.isInfinite)}%` }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className={`h-full rounded-full ${
+                campaign.type === "fundraising"
+                  ? "bg-gradient-to-r from-purple-600 to-purple-400 dark:from-purple-500 dark:to-purple-300"
+                  : campaign.type === "physical"
+                  ? "bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-500 dark:to-indigo-300"
+                  : "bg-gradient-to-r from-green-600 to-green-400 dark:from-green-500 dark:to-green-300"
+              }`}
+            />
+          </div>
           }
-          {campaign.isInfinite === false &&
-            <div className="mt-1 text-xs text-right font-medium text-gray-500 dark:text-gray-400">
-              {getPercentage(campaign.raised, campaign.goal, campaign.isInfinite)}% Complete
-            </div>
-
+          {campaign.isInfinite===false &&
+          <div className="mt-1 text-xs text-right font-medium text-gray-500 dark:text-gray-400">
+            {getPercentage(campaign.raised, campaign.goal, campaign.isInfinite)}% Complete
+          </div>
+          
           }
           {campaign.type === "fixedamount" && (
             <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
@@ -140,12 +143,13 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => onClick(campaign.id)}
-          className={`w-full py-3 rounded-lg text-white shadow-sm hover:shadow-md transition-all ${campaign.type === "fundraising"
+          className={`w-full py-3 rounded-lg text-white shadow-sm hover:shadow-md transition-all ${
+            campaign.type === "fundraising"
               ? "bg-gradient-to-r from-purple-700 to-purple-600 dark:from-purple-600 dark:to-purple-500"
               : campaign.type === "physical"
-                ? "bg-gradient-to-r from-indigo-700 to-indigo-600 dark:from-indigo-600 dark:to-indigo-500"
-                : "bg-gradient-to-r from-green-700 to-green-600 dark:from-green-600 dark:to-green-500"
-            }`}
+              ? "bg-gradient-to-r from-indigo-700 to-indigo-600 dark:from-indigo-600 dark:to-indigo-500"
+              : "bg-gradient-to-r from-green-700 to-green-600 dark:from-green-600 dark:to-green-500"
+          }`}
         >
           {campaign.type === "fundraising" ? "Donate Now" : campaign.type === "physical" ? "Join Initiative" : "Support Now"}
         </motion.button>

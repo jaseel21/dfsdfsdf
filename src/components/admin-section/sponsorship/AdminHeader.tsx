@@ -1,13 +1,16 @@
-import { PlusCircle, Download } from "lucide-react";
+import React from "react";
+import { PlusCircle, Download, Users } from "lucide-react";
 import Link from "next/link";
 
 interface AdminHeaderProps {
   title: string;
   description: string;
   onAddNew: () => void;
+  showYatheemButton?: boolean;
+  icon?: React.ElementType;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description, onAddNew, showYatheemButton = false, icon: Icon = PlusCircle }) => {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -19,7 +22,23 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description }) => {
         </p>
       </div>
 
-      <div className="flex gap-2 w-full sm:w-auto">
+      <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+        {showYatheemButton && (
+          <Link
+            href="/admin/sponsorships/yatheem-list"
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-sm font-medium hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 flex items-center shadow-lg"
+          >
+            <Users className="h-4 w-4 mr-2" /> Manage Yatheem
+          </Link>
+        )}
+        {onAddNew && (
+          <button
+            onClick={onAddNew}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg text-sm font-medium hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 flex items-center shadow-lg"
+          >
+            <Icon className="h-4 w-4 mr-2" /> Add New
+          </button>
+        )}
         <button
           onClick={() => {
             // Export functionality can be added here
@@ -29,18 +48,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description }) => {
         >
           <Download className="h-4 w-4 mr-2" /> Export
         </button>
-        {/* <button
-          onClick={onAddNew}
-          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-green-600 transition-all duration-300 flex items-center shadow-lg"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" /> Add Sponsorship
-        </button> */}
-        <Link
-          href="/admin/sponsorships/create"
-          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-green-600 transition-all duration-300 flex items-center shadow-lg"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" /> Add Sponsorship
-        </Link>
+        {!showYatheemButton && (
+          <Link
+            href="/admin/sponsorships/create"
+            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-green-600 transition-all duration-300 flex items-center shadow-lg"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" /> Add Sponsorship
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -1,12 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, User, AlertCircle, RefreshCcw, ChevronLeft, ChevronRight,
   Search, Download, Eye, BarChart2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function SubscriptionsPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user?.permissions?.includes("subscriptions_list") || session?.user?.permissions?.includes("*"));
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -232,7 +240,9 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3 text-sm">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        sub.paymentStatus === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                        sub.paymentStatus === "paid" 
+                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" 
+                          : "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-white"
                       }`}
                     >
                       {sub.paymentStatus || "N/A"}

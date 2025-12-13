@@ -6,9 +6,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 
 const Institute: React.FC = () => {
-  const [form, setForm] = useState({
-    fullName: "",
-    phoneNumber: "",
+  const [form, setForm] = useState({ 
+    fullName: "", 
+    phoneNumber: "", 
     location: "",
     email: "",
     amount: 0,
@@ -17,19 +17,19 @@ const Institute: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const [activeTab, setActiveTab] = useState("about");
-
+  
   const videos = [
     { id: 1, title: "Campus Tour", url: "https://www.youtube.com/embed/sample1", thumbnail: "/api/placeholder/480/270" },
     { id: 2, title: "Student Life", url: "https://www.youtube.com/embed/sample2", thumbnail: "/api/placeholder/480/270" },
   ];
-
+  
   const galleryImages = [
     { id: 1, title: "Main Building", src: "/api/placeholder/400/300" },
     { id: 2, title: "Library", src: "/api/placeholder/400/300" },
     { id: 3, title: "Classroom", src: "/api/placeholder/400/300" },
     { id: 4, title: "Cafeteria", src: "/api/placeholder/400/300" },
   ];
-
+  
   const instituteFacts = [
     { label: "Established", value: "1995" },
     { label: "Students", value: "1,200+" },
@@ -40,13 +40,13 @@ const Institute: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log(form);
       setShowThankYou(true);
-
+      
       // Reset form after delay
       setTimeout(() => {
         setShowThankYou(false);
@@ -58,7 +58,7 @@ const Institute: React.FC = () => {
       setIsLoading(false);
     }
   };
-
+  
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -69,13 +69,13 @@ const Institute: React.FC = () => {
       }
     }
   };
-
+  
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring" as const, stiffness: 100 }
+      transition: { type: "spring", stiffness: 100 }
     }
   };
 
@@ -83,7 +83,7 @@ const Institute: React.FC = () => {
     <section className="py-24 px-6 bg-gradient-to-br from-indigo-50 to-purple-50">
       <div className="container mx-auto max-w-6xl">
         {/* Section Header */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -96,7 +96,7 @@ const Institute: React.FC = () => {
           <h2 className="text-5xl font-extrabold text-indigo-900 mb-4">Our Institute</h2>
           <p className="text-xl text-indigo-700 max-w-2xl mx-auto">Help support our educational institute that&apos;s transforming lives through quality education and values.</p>
         </motion.div>
-
+        
         {/* Thank You Modal */}
         {showThankYou && (
           <motion.div
@@ -113,7 +113,7 @@ const Institute: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You for Your Support!</h3>
               <p className="text-gray-600 mb-6">Your donation to our institute will help us continue providing quality education.</p>
-              <button
+              <button 
                 onClick={() => setShowThankYou(false)}
                 className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition-all"
               >
@@ -122,10 +122,10 @@ const Institute: React.FC = () => {
             </div>
           </motion.div>
         )}
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Institute Info Section */}
-          <motion.div
+          <motion.div 
             className="lg:col-span-2"
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -134,35 +134,38 @@ const Institute: React.FC = () => {
           >
             {/* Tabs Navigation */}
             <div className="flex border-b border-indigo-200 mb-6">
-              <button
-                className={`py-3 px-5 font-medium text-lg ${activeTab === 'about'
-                    ? 'text-indigo-800 border-b-2 border-indigo-600'
+              <button 
+                className={`py-3 px-5 font-medium text-lg ${
+                  activeTab === 'about' 
+                    ? 'text-indigo-800 border-b-2 border-indigo-600' 
                     : 'text-indigo-400 hover:text-indigo-600'
-                  }`}
+                }`}
                 onClick={() => setActiveTab('about')}
               >
                 About
               </button>
-              <button
-                className={`py-3 px-5 font-medium text-lg ${activeTab === 'videos'
-                    ? 'text-indigo-800 border-b-2 border-indigo-600'
+              <button 
+                className={`py-3 px-5 font-medium text-lg ${
+                  activeTab === 'videos' 
+                    ? 'text-indigo-800 border-b-2 border-indigo-600' 
                     : 'text-indigo-400 hover:text-indigo-600'
-                  }`}
+                }`}
                 onClick={() => setActiveTab('videos')}
               >
                 Videos
               </button>
-              <button
-                className={`py-3 px-5 font-medium text-lg ${activeTab === 'gallery'
-                    ? 'text-indigo-800 border-b-2 border-indigo-600'
+              <button 
+                className={`py-3 px-5 font-medium text-lg ${
+                  activeTab === 'gallery' 
+                    ? 'text-indigo-800 border-b-2 border-indigo-600' 
                     : 'text-indigo-400 hover:text-indigo-600'
-                  }`}
+                }`}
                 onClick={() => setActiveTab('gallery')}
               >
                 Gallery
               </button>
             </div>
-
+            
             {/* About Tab Content */}
             {activeTab === 'about' && (
               <motion.div
@@ -172,24 +175,24 @@ const Institute: React.FC = () => {
                 className="bg-white rounded-2xl shadow-xl p-6"
               >
                 <div className="relative h-64 w-full rounded-xl overflow-hidden mb-6">
-                  <Image
-                    src="/api/placeholder/800/400"
+                  <Image 
+                    src="/api/placeholder/800/400" 
                     alt="Institute Building"
                     className="object-cover"
                     fill
                   />
                 </div>
-
+                
                 <h3 className="text-2xl font-bold text-indigo-900 mb-4">Excellence in Education</h3>
-
+                
                 <p className="text-gray-600 mb-4">
                   Our institute has been a beacon of educational excellence since its establishment. We provide quality education to students from all backgrounds, fostering an environment of learning, growth, and character development.
                 </p>
-
+                
                 <p className="text-gray-600 mb-6">
                   With dedicated teachers, modern facilities, and a comprehensive curriculum, we prepare students not just academically but also instill values and skills needed for life. Your support helps us continue this important mission.
                 </p>
-
+                
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {instituteFacts.map((fact, index) => (
                     <div key={index} className="bg-indigo-50 p-4 rounded-xl text-center">
@@ -200,7 +203,7 @@ const Institute: React.FC = () => {
                 </div>
               </motion.div>
             )}
-
+            
             {/* Videos Tab Content */}
             {activeTab === 'videos' && (
               <motion.div
@@ -211,14 +214,14 @@ const Institute: React.FC = () => {
                 className="space-y-6"
               >
                 {videos.map((video) => (
-                  <motion.div
-                    key={video.id}
+                  <motion.div 
+                    key={video.id} 
                     variants={itemVariants}
                     className="bg-white rounded-2xl shadow-xl overflow-hidden"
                   >
                     <div className="relative aspect-video">
-                      <Image
-                        src={video.thumbnail}
+                      <Image 
+                        src={video.thumbnail} 
                         alt={video.title}
                         className="object-cover"
                         fill
@@ -238,7 +241,7 @@ const Institute: React.FC = () => {
                 ))}
               </motion.div>
             )}
-
+            
             {/* Gallery Tab Content */}
             {activeTab === 'gallery' && (
               <motion.div
@@ -249,14 +252,14 @@ const Institute: React.FC = () => {
                 variants={containerVariants}
               >
                 {galleryImages.map((image) => (
-                  <motion.div
-                    key={image.id}
+                  <motion.div 
+                    key={image.id} 
                     variants={itemVariants}
                     className="bg-white rounded-xl shadow-md overflow-hidden"
                   >
                     <div className="relative h-48 w-full">
-                      <Image
-                        src={image.src}
+                      <Image 
+                        src={image.src} 
                         alt={image.title}
                         className="object-cover"
                         fill
@@ -270,7 +273,7 @@ const Institute: React.FC = () => {
               </motion.div>
             )}
           </motion.div>
-
+          
           {/* Donation Form */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -280,7 +283,7 @@ const Institute: React.FC = () => {
           >
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-xl">
               <h3 className="text-2xl font-bold text-indigo-900 mb-6">Support Our Institute</h3>
-
+              
               <div className="space-y-4 mb-6">
                 <div className="relative">
                   <input
@@ -294,7 +297,7 @@ const Institute: React.FC = () => {
                   />
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-400">₹</span>
                 </div>
-
+                
                 <input
                   type="text"
                   placeholder="Full Name"
@@ -303,7 +306,7 @@ const Institute: React.FC = () => {
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   required
                 />
-
+                
                 <input
                   type="tel"
                   placeholder="Phone Number"
@@ -312,7 +315,7 @@ const Institute: React.FC = () => {
                   onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
                   required
                 />
-
+                
                 <input
                   type="email"
                   placeholder="Email (Optional)"
@@ -320,7 +323,7 @@ const Institute: React.FC = () => {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
-
+                
                 <input
                   type="text"
                   placeholder="Location (District, Panchayat)"
@@ -329,7 +332,7 @@ const Institute: React.FC = () => {
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
                   required
                 />
-
+                
                 <textarea
                   placeholder="Your Message (Optional)"
                   rows={3}
@@ -338,7 +341,7 @@ const Institute: React.FC = () => {
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
                 ></textarea>
               </div>
-
+              
               <motion.button
                 type="submit"
                 disabled={isLoading || !form.amount || !form.fullName || !form.phoneNumber || !form.location}
@@ -357,7 +360,7 @@ const Institute: React.FC = () => {
                 ) : "Donate to Institute"
                 }
               </motion.button>
-
+              
               <div className="mt-4">
                 <p className="text-sm text-center text-gray-500">
                   Your contribution may qualify for tax benefits under applicable laws.

@@ -13,6 +13,15 @@ export default function ClientHeader() {
   if (pathname === "/mobile-donation") {
     return null;
   }
+  if (pathname === "/mobile-receipts") {
+    return null;
+  }
+  if (pathname === "/mobile-subscription") {
+    return null;
+  }
 
-  return <Header />;
+  // Check if it's a login page
+  const isLoginPage = pathname.includes("/auth/") || pathname.includes("/sign-in");
+
+  return <Header isLoginPage={isLoginPage} />;
 }

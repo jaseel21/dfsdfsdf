@@ -1,6 +1,6 @@
 // src/app/admin/(admin)/donations/detail/page.tsx
 "use client";
-import  { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -17,6 +17,8 @@ import {
   XCircle,
   Edit
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define types for donation data
 interface Donor {
@@ -869,7 +871,12 @@ Thank you for your generous contribution!
   );
 }
 
-export default function DetailedViewPage() {
+export default function DonationDetailPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("donation_detail");
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
   return (
     <Suspense fallback={<LoadingComponent />}>
       <DonationDetailContent />

@@ -23,14 +23,28 @@ interface DistrictData {
   urban_local_bodies: { name: string; type: string }[];
 }
 
+
+
+
+
+const OUTSIDE_KERALA_CITIES = [
+  { value: "Gudalur", label: "Gudalur" },
+  { value: "Nilgiri", label: "Nilgiri" },
+  { value: "Mangalore", label: "Mangalore" },
+  { value: "Bangalore", label: "Bangalore" },
+  { value: "Chennai", label: "Chennai" },
+];
+
 const LocationSelector = ({ selectedLocation, onLocationChange }: LocationSelectorProps) => {
   const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
   const [filteredOptions, setFilteredOptions] = useState<LocationOption[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationType, setLocationType] = useState<"kerala" | "others">("kerala");
 
-  // Fetch and process location data
+  // Fetch and process Kerala location data
   useEffect(() => {
+    if (locationType !== "kerala") return;
     const fetchLocations = async () => {
       try {
         const response = await fetch("/kerala_local.json");
@@ -77,10 +91,11 @@ const LocationSelector = ({ selectedLocation, onLocationChange }: LocationSelect
     };
 
     fetchLocations();
-  }, []);
+  }, [locationType]);
 
-  // Filter options when district is selected
+  // Filter options when district is selected (Kerala only)
   useEffect(() => {
+    if (locationType !== "kerala") return;
     if (selectedDistrict) {
       const filtered = locationOptions.filter(
         (option) => option.district === selectedDistrict && option.type !== "district"
@@ -90,7 +105,7 @@ const LocationSelector = ({ selectedLocation, onLocationChange }: LocationSelect
       const districts = locationOptions.filter((option) => option.type === "district");
       setFilteredOptions(districts);
     }
-  }, [selectedDistrict, locationOptions]);
+  }, [selectedDistrict, locationOptions, locationType]);
 
   // Handle district selection
   const handleDistrictChange = (district: string | null) => {
@@ -183,38 +198,88 @@ const LocationSelector = ({ selectedLocation, onLocationChange }: LocationSelect
     }),
   };
 
+  // Handle radio change
+  const handleLocationTypeChange = (type: "kerala" | "others") => {
+    setLocationType(type);
+    setSelectedDistrict(null);
+    onLocationChange("");
+  };
+
   return (
     <div className="space-y-2">
-      <label className="block text-indigo-800 dark:text-indigo-200 font-medium mb-2">Your Location</label>
-      <Select
-        options={districtOptions}
-        onChange={(selected) => handleDistrictChange(selected?.value || null)}
-        placeholder="Select your district..."
-        isClearable
-        isSearchable
-        styles={customStyles}
-        className="w-full mb-2"
-        isLoading={isLoading}
-      />
+      {/* Radio buttons */}
+      <div className="flex items-center gap-6 mb-2">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="locationType"
+            value="kerala"
+            checked={locationType === "kerala"}
+            onChange={() => handleLocationTypeChange("kerala")}
+          />
+          <span className="text-indigo-800 dark:text-indigo-200 font-medium">Kerala</span>
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="locationType"
+            value="others"
+            checked={locationType === "others"}
+            onChange={() => handleLocationTypeChange("others")}
+          />
+          <span className="text-indigo-800 dark:text-indigo-200 font-medium">Others</span>
+        </label>
+      </div>
 
-      {selectedDistrict && (
-        <Select
-          options={filteredOptions}
-          formatOptionLabel={formatOptionLabel}
-          value={filteredOptions.find((option) => option.value === selectedLocation)}
-          onChange={(selected) => onLocationChange(selected?.value || "")}
-          placeholder={`Select location in ${selectedDistrict}...`}
-          isLoading={isLoading}
-          styles={customStyles}
-          isClearable
-          className="w-full"
-        />
+      <label className="block text-indigo-800 dark:text-indigo-200 font-medium mb-2">Your Location</label>
+
+      {/* Kerala location selector */}
+      {locationType === "kerala" && (
+        <>
+          <Select
+            options={districtOptions}
+            onChange={(selected) => handleDistrictChange(selected?.value || null)}
+            placeholder="Select your district..."
+            isClearable
+            isSearchable
+            styles={customStyles}
+            className="w-full mb-2"
+            isLoading={isLoading}
+          />
+
+          {selectedDistrict && (
+            <Select
+              options={filteredOptions}
+              formatOptionLabel={formatOptionLabel}
+              value={filteredOptions.find((option) => option.value === selectedLocation)}
+              onChange={(selected) => onLocationChange(selected?.value || "")}
+              placeholder={`Select location in ${selectedDistrict}...`}
+              isLoading={isLoading}
+              styles={customStyles}
+              isClearable
+              className="w-full"
+            />
+          )}
+
+          {!selectedDistrict && selectedLocation && (
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-800 rounded-lg text-indigo-700 dark:text-indigo-200 text-sm">
+              Please select a district first to choose your specific location.
+            </div>
+          )}
+        </>
       )}
 
-      {!selectedDistrict && selectedLocation && (
-        <div className="p-3 bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-800 rounded-lg text-indigo-700 dark:text-indigo-200 text-sm">
-          Please select a district first to choose your specific location.
-        </div>
+      {/* Others location selector */}
+      {locationType === "others" && (
+        <Select
+          options={OUTSIDE_KERALA_CITIES}
+          value={OUTSIDE_KERALA_CITIES.find((city) => city.value === selectedLocation)}
+          onChange={(selected) => onLocationChange(selected?.value || "")}
+          placeholder="Select your city..."
+          isClearable
+          styles={customStyles}
+          className="w-full"
+        />
       )}
     </div>
   );

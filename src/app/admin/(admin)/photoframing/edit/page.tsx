@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import NextImage from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +22,8 @@ import {
   Eye
 } from "lucide-react";
 import { useFrameStore } from "@/store/frameStore";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define types
 interface PlacementCoords {
@@ -170,6 +172,9 @@ export default function EditFramePage() {
   const frameId = searchParams.get("id");
 
   const { frames, updateFrame, fetchFrames } = useFrameStore() as FrameStore;
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("photoframing_edit");
 
   const [defaultSizes] = useState({
     image: { widthPercent: 0.3, heightPercent: 0.25, xPercent: 0.35, yPercent: 0.45 },
@@ -246,134 +251,6 @@ export default function EditFramePage() {
 
     fetchFrameData();
   }, [frameId, frames, fetchFrames, router]);
-
-  const initializeFormWithFrame = (frame: Frame) => {
-    console.log("Initializing with frame data:", frame);
-    setName(frame.name);
-    setSampleText(frame.name);
-    setCurrentImageUrl(frame.imageUrl);
-    setPreviewImage(frame.imageUrl);
-    
-    setEditorData({
-      dimensions: frame.dimensions || { width: 600, height: 600 },
-      placementCoords: { ...frame.placementCoords },
-      textSettings: {
-        x: typeof frame.textSettings.x === 'number' ? frame.textSettings.x : 200,
-        y: typeof frame.textSettings.y === 'number' ? frame.textSettings.y : 450,
-        width: typeof frame.textSettings.width === 'number' ? frame.textSettings.width : 200,
-        height: typeof frame.textSettings.height === 'number' ? frame.textSettings.height : 50,
-        font: frame.textSettings.font || "Arial",
-        size: frame.textSettings.size || 16,
-        color: frame.textSettings.color || "#ffffff",
-      },
-    });
-  };
-
-  const resetToDefaults = () => {
-    const frameWidth = editorData.dimensions.width;
-    const frameHeight = editorData.dimensions.height;
-    setEditorData((prev) => ({
-      ...prev,
-      placementCoords: {
-        x: Math.round(frameWidth * defaultSizes.image.xPercent),
-        y: Math.round(frameHeight * defaultSizes.image.yPercent),
-        width: Math.round(frameWidth * defaultSizes.image.widthPercent),
-        height: Math.round(frameHeight * defaultSizes.image.heightPercent),
-      },
-      textSettings: {
-        ...prev.textSettings,
-        x: Math.round(frameWidth * defaultSizes.text.xPercent),
-        y: Math.round(frameHeight * defaultSizes.text.yPercent),
-        width: Math.round(frameWidth * defaultSizes.text.widthPercent),
-        height: Math.round(frameHeight * defaultSizes.text.heightPercent),
-      },
-    }));
-  };
-
-  const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const dimensions = { width: img.naturalWidth, height: img.naturalHeight };
-        URL.revokeObjectURL(img.src);
-        resolve(dimensions);
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(img.src);
-        reject(new Error("Failed to load image dimensions"));
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  const handleBrowseClick = () => {
-    console.log("handleBrowseClick triggered");
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    } else {
-      console.error("fileInputRef is null");
-    }
-  };
-
-  const calculateScaleFactor = (canvas: HTMLCanvasElement, dimensions: { width: number; height: number }) => {
-    const rect = canvas.getBoundingClientRect();
-    return { x: dimensions.width / rect.width, y: dimensions.height / rect.height };
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList } }) => {
-    console.log("handleImageUpload triggered");
-    const files = "target" in e ? e.target.files : null;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-    if (!file.type.startsWith("image/")) {
-      setErrors({ ...errors, frameImage: "Please upload an image file (PNG, JPG)" });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors({ ...errors, frameImage: "Image size must be less than 5MB" });
-      return;
-    }
-
-    const newErrors = { ...errors };
-    delete newErrors.frameImage;
-    setErrors(newErrors);
-
-    try {
-      const dimensions = await getImageDimensions(file);
-      setEditorData((prev) => ({
-        ...prev,
-        dimensions,
-        placementCoords: {
-          x: Math.floor(dimensions.width * defaultSizes.image.xPercent),
-          y: Math.floor(dimensions.height * defaultSizes.image.yPercent),
-          width: Math.floor(dimensions.width * defaultSizes.image.widthPercent),
-          height: Math.floor(dimensions.height * defaultSizes.image.heightPercent),
-        },
-        textSettings: {
-          ...prev.textSettings,
-          x: Math.floor(dimensions.width * defaultSizes.text.xPercent),
-          y: Math.floor(dimensions.height * defaultSizes.text.yPercent),
-          width: Math.floor(dimensions.width * defaultSizes.text.widthPercent),
-          height: Math.floor(dimensions.height * defaultSizes.text.heightPercent),
-        },
-      }));
-      setFrameImage(file);
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewImage(objectUrl);
-      console.log("Image uploaded successfully:", objectUrl);
-    } catch (error) {
-      console.error("Error processing image:", error);
-      setErrors({ ...errors, frameImage: "Failed to process image dimensions" });
-    }
-  };
-
-  const resetImage = () => {
-    console.log("Remove Image clicked");
-    setFrameImage(null);
-    setPreviewImage(currentImageUrl);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   useEffect(() => {
     if (!canvasRef.current || !previewImage) return;
@@ -528,6 +405,137 @@ export default function EditFramePage() {
 
     renderPreview();
   }, [previewImage, editorData, sampleText]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
+
+  const initializeFormWithFrame = (frame: Frame) => {
+    console.log("Initializing with frame data:", frame);
+    setName(frame.name);
+    setSampleText(frame.name);
+    setCurrentImageUrl(frame.imageUrl);
+    setPreviewImage(frame.imageUrl);
+    
+    setEditorData({
+      dimensions: frame.dimensions || { width: 600, height: 600 },
+      placementCoords: { ...frame.placementCoords },
+      textSettings: {
+        x: typeof frame.textSettings.x === 'number' ? frame.textSettings.x : 200,
+        y: typeof frame.textSettings.y === 'number' ? frame.textSettings.y : 450,
+        width: typeof frame.textSettings.width === 'number' ? frame.textSettings.width : 200,
+        height: typeof frame.textSettings.height === 'number' ? frame.textSettings.height : 50,
+        font: frame.textSettings.font || "Arial",
+        size: frame.textSettings.size || 16,
+        color: frame.textSettings.color || "#ffffff",
+      },
+    });
+  };
+
+  const resetToDefaults = () => {
+    const frameWidth = editorData.dimensions.width;
+    const frameHeight = editorData.dimensions.height;
+    setEditorData((prev) => ({
+      ...prev,
+      placementCoords: {
+        x: Math.round(frameWidth * defaultSizes.image.xPercent),
+        y: Math.round(frameHeight * defaultSizes.image.yPercent),
+        width: Math.round(frameWidth * defaultSizes.image.widthPercent),
+        height: Math.round(frameHeight * defaultSizes.image.heightPercent),
+      },
+      textSettings: {
+        ...prev.textSettings,
+        x: Math.round(frameWidth * defaultSizes.text.xPercent),
+        y: Math.round(frameHeight * defaultSizes.text.yPercent),
+        width: Math.round(frameWidth * defaultSizes.text.widthPercent),
+        height: Math.round(frameHeight * defaultSizes.text.heightPercent),
+      },
+    }));
+  };
+
+  const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const dimensions = { width: img.naturalWidth, height: img.naturalHeight };
+        URL.revokeObjectURL(img.src);
+        resolve(dimensions);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error("Failed to load image dimensions"));
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleBrowseClick = () => {
+    console.log("handleBrowseClick triggered");
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error("fileInputRef is null");
+    }
+  };
+
+  const calculateScaleFactor = (canvas: HTMLCanvasElement, dimensions: { width: number; height: number }) => {
+    const rect = canvas.getBoundingClientRect();
+    return { x: dimensions.width / rect.width, y: dimensions.height / rect.height };
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList } }) => {
+    console.log("handleImageUpload triggered");
+    const files = "target" in e ? e.target.files : null;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith("image/")) {
+      setErrors({ ...errors, frameImage: "Please upload an image file (PNG, JPG)" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ ...errors, frameImage: "Image size must be less than 5MB" });
+      return;
+    }
+
+    const newErrors = { ...errors };
+    delete newErrors.frameImage;
+    setErrors(newErrors);
+
+    try {
+      const dimensions = await getImageDimensions(file);
+      setEditorData((prev) => ({
+        ...prev,
+        dimensions,
+        placementCoords: {
+          x: Math.floor(dimensions.width * defaultSizes.image.xPercent),
+          y: Math.floor(dimensions.height * defaultSizes.image.yPercent),
+          width: Math.floor(dimensions.width * defaultSizes.image.widthPercent),
+          height: Math.floor(dimensions.height * defaultSizes.image.heightPercent),
+        },
+        textSettings: {
+          ...prev.textSettings,
+          x: Math.floor(dimensions.width * defaultSizes.text.xPercent),
+          y: Math.floor(dimensions.height * defaultSizes.text.yPercent),
+          width: Math.floor(dimensions.width * defaultSizes.text.widthPercent),
+          height: Math.floor(dimensions.height * defaultSizes.text.heightPercent),
+        },
+      }));
+      setFrameImage(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewImage(objectUrl);
+      console.log("Image uploaded successfully:", objectUrl);
+    } catch (error) {
+      console.error("Error processing image:", error);
+      setErrors({ ...errors, frameImage: "Failed to process image dimensions" });
+    }
+  };
+
+  const resetImage = () => {
+    console.log("Remove Image clicked");
+    setFrameImage(null);
+    setPreviewImage(currentImageUrl);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const getCursorStyle = (): string => {
     if (isDraggingImage || isDraggingText) return "cursor-grabbing";

@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -41,6 +41,8 @@ interface Template {
   title?: string;
   body: string;
   imageUrl?: string;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 interface NotificationPayload {
@@ -56,6 +58,9 @@ interface NotificationPayload {
     phones?: string[];
     emails?: string[];
   };
+  // Enhanced push notification fields
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 interface UserCounts {
@@ -96,6 +101,11 @@ export default function SendNotificationsPage() {
   const [customBody, setCustomBody] = useState("");
   const [customSubject, setCustomSubject] = useState("");
   const [customImageUrl, setCustomImageUrl] = useState("");
+  
+  // Enhanced push notification state for button and redirection
+  const [customButtonText, setCustomButtonText] = useState("");
+  const [customButtonLink, setCustomButtonLink] = useState("");
+  const [linkType, setLinkType] = useState("internal"); // internal or external
 
   // Fetch user counts from API
   const fetchUserCounts = useCallback(async () => {
@@ -171,6 +181,9 @@ export default function SendNotificationsPage() {
     setCustomBody("");
     setCustomSubject("");
     setCustomImageUrl("");
+    setCustomButtonText("");
+    setCustomButtonLink("");
+    setLinkType("internal");
   };
 
   // Handle template selection
@@ -188,6 +201,8 @@ export default function SendNotificationsPage() {
       if (template.body) setCustomBody(template.body);
       if (template.subject) setCustomSubject(template.subject);
       if (template.imageUrl) setCustomImageUrl(template.imageUrl);
+      if (template.buttonText) setCustomButtonText(template.buttonText);
+      if (template.buttonLink) setCustomButtonLink(template.buttonLink);
     } else {
       setTemplateDetails(null);
       setShowTemplateDetails(false);
@@ -334,7 +349,19 @@ export default function SendNotificationsPage() {
     // Add channel-specific fields
     if (selectedChannel === "push") {
       payload.title = customTitle;
-      payload.imageUrl = customImageUrl || undefined;
+      
+      // Only add imageUrl if it's not empty
+      if (customImageUrl && customImageUrl.trim()) {
+        payload.imageUrl = customImageUrl.trim();
+      }
+      
+      // Add button configuration if provided
+      if (customButtonText.trim()) {
+        payload.buttonText = customButtonText.trim();
+        if (customButtonLink && customButtonLink.trim()) {
+          payload.buttonLink = customButtonLink.trim();
+        }
+      }
     } else if (selectedChannel === "email") {
       payload.subject = customSubject;
     }
@@ -764,6 +791,19 @@ export default function SendNotificationsPage() {
                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{templateDetails.imageUrl}</span>
                      </div>
                    )}
+                   
+                   {templateDetails.type === 'push' && templateDetails.buttonText && (
+                     <div className="mt-2">
+                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                         <span className="font-medium">Button:</span> {templateDetails.buttonText}
+                       </p>
+                       {templateDetails.buttonLink && (
+                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                           <span className="font-medium">Link:</span> {templateDetails.buttonLink}
+                         </p>
+                       )}
+                     </div>
+                   )}
                  </div>
                )}
 
@@ -797,6 +837,128 @@ export default function SendNotificationsPage() {
                          placeholder="Enter URL for notification image"
                          className="px-3 py-2 w-full bg-white/10 backdrop-blur-md rounded-lg border dark:border-white/20 border-gray-600/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800 dark:text-gray-200"
                        />
+                     </div>
+                     
+                     {/* Enhanced Button Configuration */}
+                     <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                       <h4 className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
+                         Custom Button Configuration (Optional)
+                       </h4>
+                       
+                       <div>
+                         <label htmlFor="customButtonText" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                           Button Text
+                         </label>
+                         <input
+                           type="text"
+                           id="customButtonText"
+                           value={customButtonText}
+                           onChange={(e) => setCustomButtonText(e.target.value)}
+                           placeholder="e.g., Donate Now, Watch Live, Join Campaign"
+                           className="px-3 py-2 w-full bg-white/10 backdrop-blur-md rounded-lg border dark:border-white/20 border-gray-600/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800 dark:text-gray-200"
+                         />
+                       </div>
+                       
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                           Link Type
+                         </label>
+                         <div className="grid grid-cols-2 gap-2">
+                           <button
+                             type="button"
+                             onClick={() => setLinkType("internal")}
+                             className={`p-2 rounded-lg border text-sm ${
+                               linkType === "internal"
+                                 ? "bg-emerald-100 dark:bg-emerald-800/50 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300"
+                                 : "bg-white/5 border-gray-200 dark:border-gray-700/30 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                             }`}
+                           >
+                             📱 In-App Screen
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => setLinkType("external")}
+                             className={`p-2 rounded-lg border text-sm ${
+                               linkType === "external"
+                                 ? "bg-emerald-100 dark:bg-emerald-800/50 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300"
+                                 : "bg-white/5 border-gray-200 dark:border-gray-700/30 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                             }`}
+                           >
+                             🌐 External URL
+                           </button>
+                         </div>
+                       </div>
+                       
+                       <div>
+                         <label htmlFor="customButtonLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                           {linkType === "internal" ? "App Screen Path" : "External URL"}
+                         </label>
+                         <input
+                           type="text"
+                           id="customButtonLink"
+                           value={customButtonLink}
+                           onChange={(e) => setCustomButtonLink(e.target.value)}
+                           placeholder={
+                             linkType === "internal" 
+                               ? "e.g., /home?paramamount=150, /campaigns?campaignId=123" 
+                               : "e.g., https://www.youtube.com/live/R7pkey0Rokk"
+                           }
+                           className="px-3 py-2 w-full bg-white/10 backdrop-blur-md rounded-lg border dark:border-white/20 border-gray-600/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800 dark:text-gray-200"
+                         />
+                       </div>
+                       
+                       {/* Quick Templates */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                           Quick Templates
+                         </label>
+                         <div className="grid grid-cols-2 gap-2">
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setCustomButtonText("Donate Now");
+                               setCustomButtonLink("/home?paramamount=150");
+                               setLinkType("internal");
+                             }}
+                             className="p-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded border border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50"
+                           >
+                             💰 Donation
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setCustomButtonText("Live Now");
+                               setCustomButtonLink("https://www.youtube.com/live/R7pkey0Rokk");
+                               setLinkType("external");
+                             }}
+                             className="p-2 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded border border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50"
+                           >
+                             📺 YouTube Live
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setCustomButtonText("Campaign Now");
+                               setCustomButtonLink("/campaigns?campaignId=");
+                               setLinkType("internal");
+                             }}
+                             className="p-2 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                           >
+                             🎯 Campaign
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setCustomButtonText("Sponsor Now");
+                               setCustomButtonLink("/sponsorship");
+                               setLinkType("internal");
+                             }}
+                             className="p-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded border border-purple-200 dark:border-purple-800 hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                           >
+                             🤝 Sponsorship
+                           </button>
+                         </div>
+                       </div>
                      </div>
                    </>
                  )}
@@ -936,6 +1098,16 @@ export default function SendNotificationsPage() {
                            aria-label="Image preview placeholder"
                          />
                          <span className="ml-2 text-sm text-gray-500">Image Preview</span>
+                       </div>
+                     )}
+                     {customButtonText && (
+                       <div className="mt-3">
+                         <button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                           {customButtonText}
+                         </button>
+                         <p className="text-xs text-gray-400 mt-1 text-center">
+                           {linkType === "external" ? "🌐" : "📱"} {customButtonLink || "No link configured"}
+                         </p>
                        </div>
                      )}
                    </div>

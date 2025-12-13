@@ -1,28 +1,31 @@
-// app/api/institutions/[id]/route.js
+
 import connectToDatabase from '../../../../lib/db';
 import Institution from '../../../../models/Institution';
 import { NextResponse } from 'next/server';
-import { supabase } from '../../../../lib/supabaseInstitution';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
+
 // GET for fetching a single institution
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
     await connectToDatabase();
-
-    const { id } = params;
-    if (!id) {
-      return NextResponse.json({ error: 'Institution ID is required' }, { status: 400 });
+    // Safely resolve params (handles both sync and async)
+    const resolvedParams = context?.params instanceof Promise ? await context.params : context?.params;
+    const id = resolvedParams?.id;
+    console.log("Institution ID:", id);
+    // Validate the ID
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Institution ID is required and must be a valid string' }, { status: 400 });
     }
-
+    // Await the findById query and use lean() to get a plain object
     const institution = await Institution.findById(id).lean();
     if (!institution) {
       return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
     }
-
-    // No need to convert Buffer to base64 anymore
+    // Return the institution data
     return NextResponse.json(institution, { status: 200 });
   } catch (error) {
-    console.error('Error fetching institution:', error);
+    console.error('Error fetching institution:', error.message);
     return NextResponse.json(
       { error: 'Error fetching institution', details: error.message },
       { status: 500 }
@@ -31,20 +34,18 @@ export async function GET(request, { params }) {
 }
 
 // Add DELETE for completeness
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
     await connectToDatabase();
-
-    const { id } = params;
+    const resolvedParams = context?.params instanceof Promise ? await context.params : context?.params;
+    const id = resolvedParams?.id;
     if (!id) {
       return NextResponse.json({ error: 'Institution ID is required' }, { status: 400 });
     }
-
     const deletedInstitution = await Institution.findByIdAndDelete(id);
     if (!deletedInstitution) {
       return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
     }
-
     return NextResponse.json({ message: 'Institution deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error deleting institution:', error);
@@ -55,28 +56,24 @@ export async function DELETE(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
   try {
     await connectToDatabase();
-
-    const { id } = params;
+    const resolvedParams = context?.params instanceof Promise ? await context.params : context?.params;
+    const id = resolvedParams?.id;
     if (!id) {
       return NextResponse.json({ error: 'Institution ID is required' }, { status: 400 });
     }
-
     // Find the existing institution to get the current image URL
     const existingInstitution = await Institution.findById(id);
     if (!existingInstitution) {
       return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
     }
-
     // Check if the request is form data or JSON
     const contentType = request.headers.get('content-type') || '';
-    
     if (contentType.includes('multipart/form-data')) {
       // Handle form data
       const formData = await request.formData();
-      
       const name = formData.get('name');
       const description = formData.get('description');
       const established = formData.get('established');
@@ -86,20 +83,17 @@ export async function PUT(request, { params }) {
       const facts = factsJson ? JSON.parse(factsJson) : [];
       const featuredImageFile = formData.get('featuredImage');
       const currentImageUrl = formData.get('currentImageUrl');
-
       // Validate required fields
       const requiredFields = ['name', 'description', 'established', 'location', 'category'];
       for (const field of requiredFields) {
         if (!formData.get(field)) {
           return NextResponse.json(
             { error: `Missing required field: ${field}` },
-            { status: 400 }   
+            { status: 400 }
           );
         }
       }
-
       let imageUrl = currentImageUrl || existingInstitution.featuredImage;
-
       // Upload image to Supabase if a new image is provided
       if (featuredImageFile && featuredImageFile.size > 0) {
         try {
@@ -107,7 +101,6 @@ export async function PUT(request, { params }) {
           const fileExt = featuredImageFile.name.split('.').pop();
           const fileName = `${uuidv4()}.${fileExt}`;
           const filePath = `institutions/${fileName}`;
-
           // Upload to Supabase Storage
           const { error: uploadError } = await supabase.storage
             .from('frames')

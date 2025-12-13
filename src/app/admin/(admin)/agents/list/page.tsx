@@ -1,6 +1,6 @@
 // src/app/(admin)/agents/list/page.tsx
 "use client";
-
+import React from "react";
 
 export default function ListAgentsPage() {
   return (

@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useSession } from "next-auth/react";
@@ -42,11 +42,24 @@ export default function UserDropdown() {
 
   const handleSignOut = async () => {
     try {
-      await signOut({ redirect: false });
+      // Add a timeout to prevent hanging
+      const signOutPromise = signOut({ 
+        redirect: false,
+        callbackUrl: '/auth/admin/sign-in'
+      });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
+      );
+      
+      await Promise.race([signOutPromise, timeoutPromise]);
+      
+      // Force redirect after successful sign out
       router.push('/auth/admin/sign-in');
     } catch (error) {
       console.error('Sign-out failed:', error);
-      alert('Failed to sign out. Please try again.');
+      // Force redirect even if signOut fails
+      router.push('/auth/admin/sign-in');
     }
   };
 

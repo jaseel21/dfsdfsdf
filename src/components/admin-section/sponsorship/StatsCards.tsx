@@ -1,3 +1,4 @@
+import React from "react";
 import { Users, Heart, DollarSign, Calculator } from "lucide-react";
 
 interface StatsCardsProps {

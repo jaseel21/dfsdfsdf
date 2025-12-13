@@ -1,5 +1,5 @@
 "use client";
-import  { useState } from "react";
+import React, { useState } from "react";
 import Papa, { ParseResult } from "papaparse";
 import { FileText, Upload } from "lucide-react";
 

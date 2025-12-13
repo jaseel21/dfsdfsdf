@@ -1,7 +1,8 @@
 // Enhanced YouTube Component with Animations and Custom Controls
 
-import  { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 export const YoutubeEmbed = ({ videoId = "YOUR_VIDEO_ID" }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,17 +22,17 @@ export const YoutubeEmbed = ({ videoId = "YOUR_VIDEO_ID" }) => {
       {!isPlaying ? (
         // Video Thumbnail with Play Button
         <div className="relative w-full h-full">
-          {/* Thumbnail Background - Replace with your thumbnail image */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900">
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Center Islamic pattern or logo */}
-              <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center">
-                <svg className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M9.5 8.5L16.5 12L9.5 15.5V8.5Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
+          {/* Thumbnail Background with actual image */}
+          <div className="absolute inset-0">
+            <Image
+              src="/images/promo-thumb.webp"
+              alt="Akode Islamic Centre Promo Video Thumbnail"
+              fill
+              className="object-cover"
+              priority
+            />
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/40"></div>
           </div>
           
           {/* Play Button */}

@@ -46,7 +46,7 @@ const AnimatedEntry = () => {
     // Rotation animation
     animate(rotation, 360, {
       duration: 3,
-      ease: "linear" as const,
+      ease: "linear",
       repeat: Infinity,
     });
 

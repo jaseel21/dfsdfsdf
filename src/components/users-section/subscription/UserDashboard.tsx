@@ -1,4 +1,5 @@
 // src/components/users-section/subscription/UserDashboard.tsx
+import React from "react";
 import { motion } from "framer-motion";
 import { Subscription, SubscriptionData, Payment } from "../types"; // Import Payment instead of PaymentHistory
 import { SubscriptionCard } from "./SubscriptionCard";

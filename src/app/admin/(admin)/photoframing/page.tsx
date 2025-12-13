@@ -1,6 +1,6 @@
 "use client";
 
-import  { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   PlusCircle, 
@@ -12,6 +12,8 @@ import {
   Medal,
   TrendingUp
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 // import { Frame } from "@/lib/types";
 
 // Define the stats interface with top frames
@@ -27,6 +29,10 @@ interface Stats {
 }
 
 export default function PhotoFramingAdminPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("photoframing_track");
+  
   const [stats, setStats] = useState<Stats>({
     totalFrames: 0,
     activeFrames: 0,
@@ -65,6 +71,9 @@ export default function PhotoFramingAdminPage() {
     
     fetchStats();
   }, []);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   return (
     <div className="p-4 md:p-6 space-y-6">

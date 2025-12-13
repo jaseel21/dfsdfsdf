@@ -22,83 +22,139 @@ export const generatePDF = async (receipt: ReceiptData) => {
   container.style.position = "absolute";
   container.style.left = "-9999px"; // Off-screen
   container.style.width = "210mm"; // A4 width
-  container.style.padding = "20mm";
+  container.style.padding = "5mm"; // Reduced from 20mm to 5mm
   container.style.backgroundColor = "#fff";
   document.body.appendChild(container);
 
-  // HTML receipt template with inline CSS
+  // Enhanced HTML receipt template with modern design
   container.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-      <!-- Header -->
-      <div style="text-align: center; border-bottom: 2px solid #4a90e2; padding-bottom: 10px;">
-        <h1 style="font-size: 24px; color: #4a90e2; margin: 0;">Donation Receipt</h1>
-        <p style="font-size: 14px; color: #666; margin: 5px 0;">
-          AIC Amal App System
-        </p>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2c3e50; max-width: 100%; margin: 0; background: white;">
+      
+      <!-- Header Section with Gradient -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 25px; text-align: center; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: relative; z-index: 2;">
+          <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 5px 0; letter-spacing: -0.5px;">DONATION RECEIPT</h1>
+          <div style="width: 70px; height: 3px; background: rgba(255,255,255,0.8); margin: 0 auto 8px auto; border-radius: 2px;"></div>
+          <p style="font-size: 16px; margin: 0; opacity: 0.95; font-weight: 600;">AIC Amal App</p>
+          <p style="font-size: 14px; margin: 2px 0 0 0; opacity: 0.85; font-weight: 300;">Akode Islamic Centre</p>
+        </div>
       </div>
 
-      <!-- Date and Receipt Number -->
-      <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-        <p style="font-size: 14px; margin: 0;">
-          <strong>Date:</strong> ${new Date(receipt.createdAt).toLocaleDateString()}
-        </p>
-        <p style="font-size: 14px; margin: 0;">
-          <strong>Receipt No:</strong> ${receipt._id}
-        </p>
+      <!-- Receipt Info Bar -->
+      <div style="background: #f8f9fc; padding: 12px 25px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center;">
+          <div style="width: 8px; height: 8px; background: #28a745; border-radius: 50%; margin-right: 8px;"></div>
+          <span style="font-size: 13px; color: #6c757d; font-weight: 500;">DATE: </span>
+          <span style="font-size: 13px; color: #495057; font-weight: 600; margin-left: 5px;">${new Date(receipt.createdAt).toLocaleDateString('en-GB')}</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <span style="font-size: 13px; color: #6c757d; font-weight: 500;">RECEIPT NO: </span>
+          <span style="font-size: 13px; color: #495057; font-weight: 600; margin-left: 5px; background: #e9ecef; padding: 3px 6px; border-radius: 4px; font-family: monospace;">${receipt._id}</span>
+        </div>
       </div>
 
-      <!-- Donor Details -->
-      <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
-        <h2 style="font-size: 18px; color: #4a90e2; margin: 0 0 10px 0;">Donor Information</h2>
-        <p style="font-size: 14px; margin: 5px 0;">
-          <strong>Name:</strong> ${receipt.name}
-        </p>
-        <p style="font-size: 14px; margin: 5px 0;">
-          <strong>Phone:</strong> ${receipt.phone}
-        </p>
-        <p style="font-size: 14px; margin: 5px 0;">
-          <strong>Location:</strong> ${
-            receipt.panchayat ? `${receipt.panchayat}, ${receipt.district}` : receipt.district
-          }
-        </p>
-      </div>
+      <!-- Main Content -->
+      <div style="padding: 18px;">
+        
+        <!-- Donor Information Card -->
+        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #dee2e6; position: relative;">
+          <div style="position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 14px; z-index: -1; opacity: 0.1;"></div>
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+              <span style="color: white; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center;">👤</span>
+            </div>
+            <h2 style="font-size: 20px; color: #2c3e50; margin: 0; font-weight: 600; line-height: 1.2;">Donor Information</h2>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <p style="font-size: 12px; color: #6c757d; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Full Name</p>
+              <p style="font-size: 16px; color: #2c3e50; margin: 0; font-weight: 600;">${receipt.name}</p>
+            </div>
+            <div>
+              <p style="font-size: 12px; color: #6c757d; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Phone Number</p>
+              <p style="font-size: 16px; color: #2c3e50; margin: 0; font-weight: 600;">${receipt.phone}</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 12px;">
+            <p style="font-size: 12px; color: #6c757d; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Location</p>
+            <p style="font-size: 16px; color: #2c3e50; margin: 0; font-weight: 600;">${
+              receipt.panchayat ? `${receipt.panchayat}, ${receipt.district}` : receipt.district
+            }</p>
+          </div>
+        </div>
 
-      <!-- Donation Details -->
-      <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
-        <h2 style="font-size: 18px; color: #4a90e2; margin: 0 0 10px 0;">Donation Details</h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <tr style="background-color: #e6f0fa;">
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">₹${receipt.amount.toLocaleString('en-IN')}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Type</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${receipt.type}</td>
-          </tr>
-          <tr style="background-color: #e6f0fa;">
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Payment ID</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${receipt.razorpayPaymentId}</td>
-          </tr>
-         
-          ${
-            receipt.instituteId
-              ? `<tr style="background-color: #e6f0fa;">
-                  <td style="padding: 8px;"><strong>Institute ID</strong></td>
-                  <td style="padding: 8px;">${receipt.instituteId}</td>
-                </tr>`
-              : ""
-          }
-        </table>
-      </div>
+        <!-- Donation Details Card -->
+        <div style="background: white; border-radius: 12px; padding: 16px; border: 2px solid #e9ecef; position: relative; overflow: hidden; margin-bottom: 16px;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+          
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+              <span style="color: white; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center;">💰</span>
+            </div>
+            <h2 style="font-size: 20px; color: #2c3e50; margin: 0; font-weight: 600; line-height: 1.2;">Donation Details</h2>
+          </div>
 
-      <!-- Footer -->
-      <div style="text-align: center; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 10px;">
-        <p style="font-size: 12px; color: #666; margin: 0;">
-          Thank you for your generous contribution!
-        </p>
-        <p style="font-size: 12px; color: #666; margin: 5px 0;">
-          This is an auto-generated receipt. For queries, contact support@aicdonations.org
-        </p>
+          <!-- Amount Highlight -->
+          <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 16px; border-radius: 10px; text-align: center; margin-bottom: 12px;">
+            <p style="font-size: 14px; margin: 0 0 6px 0; opacity: 0.9; font-weight: 500;">Donation Amount</p>
+            <p style="font-size: 32px; margin: 0; font-weight: 700; letter-spacing: -1px;">₹${receipt.amount.toLocaleString('en-IN')}</p>
+          </div>
+
+          <!-- Details Table -->
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px;">
+            <tr style="border-bottom: 1px solid #f8f9fa;">
+              <td style="padding: 8px 0; color: #6c757d; font-weight: 500; width: 40%;">Donation Type</td>
+              <td style="padding: 8px 0; color: #2c3e50; font-weight: 600;">${receipt.type}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f8f9fa;">
+              <td style="padding: 8px 0; color: #6c757d; font-weight: 500;">Payment ID</td>
+              <td style="padding: 8px 0; color: #2c3e50; font-weight: 600; font-family: monospace; font-size: 12px;">${receipt.razorpayPaymentId}</td>
+            </tr>
+            ${
+              receipt.instituteId && receipt.instituteId !== "null"
+                ? `<tr style="border-bottom: 1px solid #f8f9fa;">
+                    <td style="padding: 8px 0; color: #6c757d; font-weight: 500;">Date & Time</td>
+                    <td style="padding: 8px 0; color: #2c3e50; font-weight: 600;">${new Date(receipt.createdAt).toLocaleString('en-GB', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true
+                    })}</td>
+                  </tr>`
+                : `<tr style="border-bottom: 1px solid #f8f9fa;">
+                    <td style="padding: 8px 0; color: #6c757d; font-weight: 500;">Date & Time</td>
+                    <td style="padding: 8px 0; color: #2c3e50; font-weight: 600;">${new Date(receipt.createdAt).toLocaleString('en-GB', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true
+                    })}</td>
+                  </tr>`
+            }
+          </table>
+        </div>
+
+        <!-- Thank You Section -->
+        <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6;">
+          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+            <span style="color: white; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center;">🤲</span>
+          </div>
+          <h3 style="font-size: 20px; color: #2c3e50; margin: 0 0 8px 0; font-weight: 600;">Thank You for Your Generosity!</h3>
+          <p style="font-size: 14px; color: #6c757d; margin: 0 0 12px 0; line-height: 1.5;">Your contribution makes a meaningful difference in our community.</p>
+          
+          <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+            <p style="font-size: 12px; color: #6c757d; margin: 0 0 4px 0;">This is an auto-generated receipt.</p>
+            <p style="font-size: 12px; color: #495057; margin: 0; font-weight: 500;">For queries, contact: <span style="color: #667eea; font-weight: 600;">hello@aicamal.app</span></p>
+          </div>
+        </div>
       </div>
     </div>
   `;

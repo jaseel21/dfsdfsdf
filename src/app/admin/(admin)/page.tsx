@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-
+import React from "react";
 
 // Import custom components
 import DonationMetrics from "@/components/donation/DonationMetrics";
@@ -24,13 +24,13 @@ export default async function DonationDashboard() {
   // Mock Admin Name (Replace with actual dynamic data)
 
 
-  const session = await getServerSession(authOptions as AuthOptions)
+  const session = await getServerSession(authOptions as AuthOptions) 
   const adminName = session?.user?.name;
-
-
+  
+  
 
   return (
-
+    
     <div className="p-6 space-y-6">
       {/* Page Header */}
       <div className="flex justify-between items-center">
@@ -38,7 +38,7 @@ export default async function DonationDashboard() {
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
           Hey, <span className="text-blue-600 dark:text-yellow-400">{adminName}</span> 👋
         </h2>
-
+        
         <span className="text-gray-500 dark:text-gray-300">
           Manage donations, campaigns & volunteers
         </span>
@@ -68,18 +68,15 @@ export default async function DonationDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl">
-          {/* <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Donations Overview</h3> */}
+        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl h-[420px]">
           <BarChart />
         </div>
 
-        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl">
-          {/* <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Campaign Distribution</h3> */}
+        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl h-[420px]">
           <PieChart />
         </div>
 
-        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl">
-          {/* <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Donations Trend</h3> */}
+        <div className="col-span-12 xl:col-span-4 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl h-[420px]">
           <LineChart />
         </div>
 

@@ -4,7 +4,7 @@ import ResponsiveImage from "@/components/ui/images/ResponsiveImage";
 import ThreeColumnImageGrid from "@/components/ui/images/ThreeColumnImageGrid";
 import TwoColumnImageGrid from "@/components/ui/images/TwoColumnImageGrid";
 import { Metadata } from "next";
-
+import React from "react";
 
 export const metadata: Metadata = {
   title: "Next.js Images | AIC Amal App - Donation Platform",

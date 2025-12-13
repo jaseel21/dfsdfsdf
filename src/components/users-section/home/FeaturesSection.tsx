@@ -29,7 +29,7 @@ const FeatureCard = ({
       transition: {
         duration: 0.6,
         delay: index * 0.2,
-        ease: "easeOut" as const,
+        ease: "easeOut",
       },
     },
   };

@@ -75,7 +75,12 @@ export async function POST(req) {
     }
 
     return NextResponse.json(
-      { message: "Phone number exists", exists: true },
+      { 
+        message: "Phone number exists", 
+        exists: true,
+        role: user.role || role, // Return the user's role if available, fallback to requested role
+       
+      },
       { status: 200 }
     );
   } catch (error) {

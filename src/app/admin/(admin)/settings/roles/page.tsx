@@ -1,6 +1,6 @@
 // src/app/(admin)/settings/roles/page.tsx
 "use client";
-
+import React from "react";
 
 export default function RolePermissionsPage() {
   return (

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Box, User, Phone, Calendar, AlertCircle, MessageCircle, Search,
@@ -7,8 +7,13 @@ import {
   X, CheckCircle, XCircle, Clock
 } from "lucide-react";
 import { getPaymentStatus } from "@/lib/paymentStatus"; // Adjust path
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function BoxesPage() {
+  const { data: session, status } = useSession();
+  
+  // Move all hooks to the top before any conditional returns
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [boxes, setBoxes] = useState([]);
@@ -75,6 +80,13 @@ export default function BoxesPage() {
     setFilteredBoxes(results);
     setCurrentPage(1);
   }, [searchTerm, activeFilter, paymentFilter, sortConfig, boxes]);
+
+  // Now check permissions after hooks
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user?.permissions?.includes("boxholders_all") || session?.user?.permissions?.includes("*"));
+  
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   // Pagination and sorting
   const indexOfLastItem = currentPage * itemsPerPage;

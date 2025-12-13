@@ -1,3 +1,4 @@
+import React from "react";
 import { X, User, Calendar, DollarSign, MapPin, Phone, Hash, Clock, CreditCard } from "lucide-react";
 import { Sponsorship } from "@/app/admin/(admin)/sponsorships/list/page";
 

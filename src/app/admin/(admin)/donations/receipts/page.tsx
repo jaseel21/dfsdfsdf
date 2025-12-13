@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +18,8 @@ import {
   MessageSquare,
   RefreshCw
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define the Donation interface
 interface Donation {
@@ -52,6 +54,10 @@ interface NotificationStatus {
 }
 
 export default function GenerateReceiptsPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("donation_receipts");
+
   // States with explicit types
   const [searchText, setSearchText] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>("");
@@ -182,15 +188,15 @@ export default function GenerateReceiptsPage() {
   }, [searchText, dateFrom, dateTo, selectedType, selectAllPages]);
 
   // Fetch donations when filters change
-    useEffect(() => {
-      if (currentPage === 1) {
-        fetchDonations();
-      } else {
-        setCurrentPage(1); // This will trigger the second useEffect to fetch
-      }
-      setSelectedDonations([]);
-      setSelectAllPages(false);
-    }, [searchText, dateFrom, dateTo, selectedType, fetchDonations,currentPage]);
+  useEffect(() => {
+    if (currentPage === 1) {
+      fetchDonations();
+    } else {
+      setCurrentPage(1); // This will trigger the second useEffect to fetch
+    }
+    setSelectedDonations([]);
+    setSelectAllPages(false);
+  }, [searchText, dateFrom, dateTo, selectedType, fetchDonations, currentPage]);
 
   // Fetch donations when page changes
   useEffect(() => {
@@ -204,6 +210,9 @@ export default function GenerateReceiptsPage() {
       fetchAllDonationsIds();
     }
   }, [selectAllPages, searchText, dateFrom, dateTo, selectedType, fetchAllDonationsIds]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   // Apply filters and search
   const applyFilters = async () => {

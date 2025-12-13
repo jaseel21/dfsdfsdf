@@ -1,5 +1,5 @@
 // src/components/users-section/subscription/PaymentHistory.tsx
-import  { useState } from "react";
+import React, { useState } from "react";
 import {generatePDF} from '@/lib/receipt-pdf'
 
 export interface Payment {

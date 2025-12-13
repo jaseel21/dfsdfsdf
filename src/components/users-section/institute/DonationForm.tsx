@@ -58,6 +58,14 @@ declare global {
   }
 }
 
+const OUTSIDE_KERALA_CITIES = [
+ { value: "Gudalur", label: "Gudalur" },
+  { value: "Nilgiri", label: "Nilgiri" },
+  { value: "Mangalore", label: "Mangalore" },
+  { value: "Bangalore", label: "Bangalore" },
+  { value: "Chennai", label: "Chennai" },
+];
+
 const DonationForm = ({ instituteId, instituteName, onDonationComplete }: DonationFormProps) => {
   const [form, setForm] = useState({
     fullName: "",
@@ -75,6 +83,7 @@ const DonationForm = ({ instituteId, instituteName, onDonationComplete }: Donati
   const [filteredOptions, setFilteredOptions] = useState<LocationOption[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [locationType, setLocationType] = useState<"kerala" | "others">("kerala");
   const router = useRouter();
   const {startLoading,stopLoading}=useLoading();
 
@@ -452,36 +461,82 @@ const DonationForm = ({ instituteId, instituteName, onDonationComplete }: Donati
           {/* Location selection using react-select */}
           <div className="space-y-2">
             <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">Your Location</label>
-            <Select
-              options={districtOptions}
-              onChange={(selected) => handleDistrictChange(selected?.value || null)}
-              placeholder="Select your district..."
-              isClearable
-              isSearchable
-              styles={customStyles}
-              className="w-full mb-2"
-              isLoading={isLoadingLocations}
-            />
+            {/* Radio buttons */}
+            <div className="flex items-center gap-6 mb-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="locationType"
+                  value="kerala"
+                  checked={locationType === "kerala"}
+                  onChange={() => {
+                    setLocationType("kerala");
+                    setSelectedDistrict(null);
+                    setForm({ ...form, location: "" });
+                  }}
+                />
+                <span className="text-indigo-800 dark:text-indigo-200 font-medium">Kerala</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="locationType"
+                  value="others"
+                  checked={locationType === "others"}
+                  onChange={() => {
+                    setLocationType("others");
+                    setSelectedDistrict(null);
+                    setForm({ ...form, location: "" });
+                  }}
+                />
+                <span className="text-indigo-800 dark:text-indigo-200 font-medium">Others</span>
+              </label>
+            </div>
+            {locationType === "kerala" ? (
+              <>
+                <Select
+                  options={districtOptions}
+                  onChange={(selected) => handleDistrictChange(selected?.value || null)}
+                  placeholder="Select your district..."
+                  isClearable
+                  isSearchable
+                  styles={customStyles}
+                  className="w-full mb-2"
+                  isLoading={isLoadingLocations}
+                />
 
-            {selectedDistrict && (
+                {selectedDistrict && (
+                  <Select
+                    options={filteredOptions}
+                    formatOptionLabel={formatOptionLabel}
+                    value={filteredOptions.find((option) => option.value === form.location)}
+                    onChange={(selected) => setForm({ ...form, location: selected?.value || "" })}
+                    placeholder={`Select location in ${selectedDistrict}...`}
+                    isLoading={isLoadingLocations}
+                    styles={customStyles}
+                    isClearable
+                    className="w-full"
+                    required
+                  />
+                )}
+
+                {!selectedDistrict && form.location && (
+                  <div className="p-3 bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-800 rounded-lg text-indigo-700 dark:text-indigo-300 text-sm">
+                    Please select a district first to choose your specific location.
+                  </div>
+                )}
+              </>
+            ) : (
               <Select
-                options={filteredOptions}
-                formatOptionLabel={formatOptionLabel}
-                value={filteredOptions.find((option) => option.value === form.location)}
+                options={OUTSIDE_KERALA_CITIES}
+                value={OUTSIDE_KERALA_CITIES.find((city) => city.value === form.location)}
                 onChange={(selected) => setForm({ ...form, location: selected?.value || "" })}
-                placeholder={`Select location in ${selectedDistrict}...`}
-                isLoading={isLoadingLocations}
-                styles={customStyles}
+                placeholder="Select your city..."
                 isClearable
+                styles={customStyles}
                 className="w-full"
                 required
               />
-            )}
-
-            {!selectedDistrict && form.location && (
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-800 rounded-lg text-indigo-700 dark:text-indigo-300 text-sm">
-                Please select a district first to choose your specific location.
-              </div>
             )}
           </div>
 

@@ -149,6 +149,7 @@ export interface ActiveOption extends BaseOption {
 
 export const sponsorshipData: Record<SponsorshipType, (BaseOption | EducationOption)[]> = {
   Yatheem: [
+    { duration: "One Year", amount: 50000, description: "Provide full annual support with education for a child in need." },
     { duration: "One Year", amount: 30000, description: "Provide full annual support for a child in need." },
     { duration: "6 Months", amount: 15000, description: "Half-year support for essential care and education." },
     { duration: "1 Month", amount: 2500, description: "Monthly support to cover basic needs." },

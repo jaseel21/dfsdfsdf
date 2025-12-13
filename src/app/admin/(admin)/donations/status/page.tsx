@@ -1,7 +1,9 @@
 "use client";
-import  { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from 'next/navigation';
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define Donation interface
 interface Donation {
@@ -433,7 +435,12 @@ function UpdateStatusContent() {
   );
 }
 
-export default function UpdateStatusPage() {
+export default function DonationStatusPage() {
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("donation_status");
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
   return (
     <Suspense fallback={<LoadingComponent />}>
       <UpdateStatusContent />

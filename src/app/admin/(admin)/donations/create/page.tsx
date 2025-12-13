@@ -1,14 +1,20 @@
 // src/app/admin/(admin)/donations/create/page.tsx
 "use client";
-import  { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import LocationSelector from '@/components/LocationSelector';
 import keralaData from '../../../../../../public/kerala_local.json';
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function CreateDonationPage() {
     const router = useRouter();
+    const { data: session, status } = useSession();
+    const isSuperAdmin = session?.user?.role === "Super Admin";
+    const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("donation_create");
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
@@ -194,6 +200,9 @@ return;
             setIsSubmitting(false);
         }
     };
+
+    if (status === "loading") return null;
+    if (!hasPermission) return <NoAccess />;
 
     return (
         <div className="p-6 space-y-6">

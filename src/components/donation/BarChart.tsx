@@ -1,4 +1,5 @@
 "use client"
+import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -20,14 +21,14 @@ ChartJS.register(
 );
 
 const BarChart = () => {
-  const data: ChartData<"bar"> = {
-    labels: ["January", "February", "March", "April", "May", "June", "July"],
+  const [chartData, setChartData] = useState<ChartData<"bar">>({
+    labels: [],
     datasets: [
       {
-        label: "Donations",
-        data: [65, 59, 80, 81, 56, 55, 40],
-        backgroundColor: "rgba(52, 211, 153, 0.8)", // Emerald with opacity
-        hoverBackgroundColor: "rgba(16, 185, 129, 1)", // Darker on hover
+        label: "Donations (₹)",
+        data: [],
+        backgroundColor: "rgba(52, 211, 153, 0.8)",
+        hoverBackgroundColor: "rgba(16, 185, 129, 1)",
         borderColor: "rgba(16, 185, 129, 1)",
         borderWidth: 1,
         borderRadius: 6,
@@ -35,19 +36,66 @@ const BarChart = () => {
         maxBarThickness: 32,
       },
     ],
-  };
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalAmount, setTotalAmount] = useState(0);
+
+  useEffect(() => {
+    const fetchMonthlyDonations = async () => {
+      try {
+        const response = await fetch("/api/chart/monthly-donations", {
+          headers: {
+            'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch monthly donations data");
+        }
+
+        const { labels, data, total } = await response.json();
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: "Donations (₹)",
+              data,
+              backgroundColor: "rgba(52, 211, 153, 0.8)",
+              hoverBackgroundColor: "rgba(16, 185, 129, 1)",
+              borderColor: "rgba(16, 185, 129, 1)",
+              borderWidth: 1,
+              borderRadius: 6,
+              barThickness: 'flex',
+              maxBarThickness: 32,
+            },
+          ],
+        });
+        
+        setTotalAmount(total);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching monthly donations:', err);
+        setError("Failed to load monthly donation data");
+        setLoading(false);
+      }
+    };
+
+    fetchMonthlyDonations();
+  }, []);
 
   const options: ChartOptions<"bar"> = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: "bottom",
         labels: {
-          padding: 20,
+          padding: 15,
           color: "rgba(0, 0, 0, 0.8)",
           font: {
-            size: 14,
+            size: 12,
             weight: "bold",
             family: "'Inter', sans-serif",
           },
@@ -68,6 +116,11 @@ const BarChart = () => {
           family: "'Inter', sans-serif",
         },
         cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            return `₹${context.parsed.y.toLocaleString('en-IN')}`;
+          }
+        }
       },
     },
     scales: {
@@ -94,23 +147,60 @@ const BarChart = () => {
             family: "'Inter', sans-serif",
           },
           color: "rgba(0, 0, 0, 0.6)",
+          callback: function(value) {
+            return '₹' + Number(value).toLocaleString('en-IN');
+          }
         },
       },
     },
   };
 
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="space-y-1 mb-4">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+            Monthly Donations
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Loading donation data...
+          </p>
+        </div>
+        <div className="flex-1 min-h-[300px] animate-pulse bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="space-y-1 mb-4">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+            Monthly Donations
+          </h2>
+          <p className="text-sm text-red-500">
+            {error}
+          </p>
+        </div>
+        <div className="flex-1 min-h-[300px] flex items-center justify-center">
+          <p className="text-gray-500">Unable to load chart</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 rounded-lg shadow-xl max-w-2xl mx-auto p-6">
-      <div className="space-y-1 mb-6">
-        <h2 className="text-2xl font-semibold text-emerald-800 dark:text-emerald-200">
+    <div className="h-full flex flex-col">
+      <div className="space-y-1 mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
           Monthly Donations
         </h2>
-        <p className="text-sm text-emerald-600 dark:text-emerald-400">
-          Donation distribution by month
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Last 7 months • Total: ₹{totalAmount.toLocaleString('en-IN')}
         </p>
       </div>
-      <div className="w-full">
-        <Bar data={data} options={options} />
+      <div className="flex-1 min-h-[300px]">
+        <Bar data={chartData} options={options} />
       </div>
     </div>
   );

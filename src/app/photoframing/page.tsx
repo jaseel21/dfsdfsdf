@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useEffect, useRef, MouseEvent } from "react";
+import React, { useState, useEffect, useRef, MouseEvent } from "react";
 import {
   Upload,
   Save,
@@ -55,16 +55,8 @@ interface Frame {
   usageCount?: number;
 }
 
-// interface ImagePosition {
-//   x: number;
-//   y: number;
-//   scale: number;
-//   width: number;
-//   height: number;
-// }
 
 const UserPhotoFraming: React.FC = () => {
-  // const router = useRouter();
   const [frames, setFrames] = useState<Frame[]>([]);
   const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -74,26 +66,16 @@ const UserPhotoFraming: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<"select" | "upload" | "crop" | "preview" | "complete">("select");
-  // const [copySuccess, setCopySuccess] = useState<boolean>(false);
-  // const [hoveredFrame, setHoveredFrame] = useState<string | null>(null);
   const [favoriteFrames, setFavoriteFrames] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  // const [shareUrl, setShareUrl] = useState<string>("");
   const [frameCopySuccess, setFrameCopySuccess] = useState<{ [key: string]: boolean }>({});
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const userImgRef = useRef<HTMLImageElement>(null);
-  // const imageUrlRef = useRef<HTMLInputElement>(null);
+  const urlProcessedRef = useRef<boolean>(false);
 
-  // const [imagePosition, setImagePosition] = useState<ImagePosition>({
-  //   x: 0,
-  //   y: 0,
-  //   scale: 1,
-  //   width: 0,
-  //   height: 0
-  // });
 
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
@@ -131,30 +113,10 @@ const UserPhotoFraming: React.FC = () => {
 
         if (data.success) {
           setFrames(data.data);
+          
+          // Check if current selectedFrame is still valid
           if (selectedFrame && !data.data.some((f: { _id: string; }) => f._id === selectedFrame._id)) {
             setSelectedFrame(null);
-          }
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const frameId = urlParams.get('frame');
-
-          if (frameId) {
-            const frameFromUrl = data.data.find((f: { _id: string; }) => f._id === frameId);
-            if (frameFromUrl) {
-              setSelectedFrame(frameFromUrl);
-              setCurrentStep("upload");
-
-              const aspectRatio = frameFromUrl.placementCoords.width / frameFromUrl.placementCoords.height;
-              setAspect(aspectRatio);
-
-              // setImagePosition({
-              //   x: frameFromUrl.placementCoords.x,
-              //   y: frameFromUrl.placementCoords.y,
-              //   width: frameFromUrl.placementCoords.width,
-              //   height: frameFromUrl.placementCoords.height,
-              //   scale: 1
-              // });
-            }
           }
         } else {
           setError(data.message || "Failed to fetch frames");
@@ -173,7 +135,27 @@ const UserPhotoFraming: React.FC = () => {
     if (savedFavorites) {
       setFavoriteFrames(JSON.parse(savedFavorites));
     }
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Separate useEffect to handle URL parameter changes
+  useEffect(() => {
+    if (frames.length > 0 && !urlProcessedRef.current) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const frameId = urlParams.get('frame');
+
+      if (frameId) {
+        const frameFromUrl = frames.find((f) => f._id === frameId);
+        if (frameFromUrl) {
+          setSelectedFrame(frameFromUrl);
+          setCurrentStep("upload");
+
+          const aspectRatio = frameFromUrl.placementCoords.width / frameFromUrl.placementCoords.height;
+          setAspect(aspectRatio);
+        }
+      }
+      urlProcessedRef.current = true;
+    }
+  }, [frames]); // Only depend on frames
 
   useEffect(() => {
     localStorage.setItem('favoriteFrames', JSON.stringify(favoriteFrames));
@@ -198,14 +180,6 @@ const UserPhotoFraming: React.FC = () => {
     const aspectRatio = frame.placementCoords.width / frame.placementCoords.height;
     setAspect(aspectRatio);
 
-    // Store the image position for reference
-    // setImagePosition({
-    //   x: frame.placementCoords.x,
-    //   y: frame.placementCoords.y,
-    //   width: frame.placementCoords.width,
-    //   height: frame.placementCoords.height,
-    //   scale: 1
-    // });
 
     const url = new URL(window.location.href);
     url.searchParams.set('frame', frame._id);
@@ -234,9 +208,10 @@ const UserPhotoFraming: React.FC = () => {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
+    console.log('File selected:', file.name, file.type, file.size);
 
     if (!file.type.startsWith("image/")) {
-      setError("Please upload a valid image file (PNG, JPG)");
+      setError("Please upload a valid image file (PNG, JPG, JPEG, GIF)");
       return;
     }
 
@@ -247,10 +222,68 @@ const UserPhotoFraming: React.FC = () => {
 
     setError(null);
 
-    const objectUrl = URL.createObjectURL(file);
-    setUserImage(objectUrl);
-    setCroppedImage(null);
-    setCurrentStep("crop");
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      console.log('Object URL created:', objectUrl);
+      setUserImage(objectUrl);
+      setCroppedImage(null);
+      setCurrentStep("crop");
+    } catch (error) {
+      console.error('Error creating object URL:', error);
+      setError("Failed to process the image. Please try again.");
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      console.log('File dropped:', file.name, file.type, file.size);
+
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload a valid image file (PNG, JPG, JPEG, GIF)");
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Image size must be less than 10MB");
+        return;
+      }
+
+      setError(null);
+
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        console.log('Object URL created from drop:', objectUrl);
+        setUserImage(objectUrl);
+        setCroppedImage(null);
+        setCurrentStep("crop");
+      } catch (error) {
+        console.error('Error creating object URL from drop:', error);
+        setError("Failed to process the image. Please try again.");
+      }
+    }
   };
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -500,8 +533,6 @@ const UserPhotoFraming: React.FC = () => {
         console.warn('Usage tracking failed but image generated successfully');
       }
 
-      // const shareableUrl = window.location.origin + '/share?frame=' + selectedFrame._id;
-      // setShareUrl(shareableUrl);
 
       setCurrentStep("complete");
     } catch (err) {
@@ -522,21 +553,12 @@ const UserPhotoFraming: React.FC = () => {
     // setImagePosition({ x: 0, y: 0, scale: 1, width: 0, height: 0 });
     setCrop(undefined);
     setCompletedCrop(null);
-    // setCopySuccess(false);
 
     const url = new URL(window.location.href);
     url.searchParams.delete('frame');
     window.history.pushState({}, '', url);
   };
 
-  // const handleCopyShareLink = () => {
-  //   if (imageUrlRef.current) {
-  //     imageUrlRef.current.select();
-  //     document.execCommand('copy');
-  //     setCopySuccess(true);
-  //     setTimeout(() => setCopySuccess(false), 2000);
-  //   }
-  // };
 
   const handleShare = async () => {
     if (!finalImage) return;
@@ -644,219 +666,244 @@ const UserPhotoFraming: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xl font-medium text-gray-800">Photo Framing</div>
-
-            <div className="flex-1 max-w-xl mx-auto">
-              <div className="flex items-center justify-between px-2 sm:px-10">
-                {['select', 'upload', 'crop', 'preview', 'complete'].map((step, index) => (
-                  <div key={step} className="flex flex-col items-center">
-                    <div
-                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 ${currentStep === step
-                        ? "bg-blue-500 text-white"
-                        : (['select', 'upload', 'crop', 'preview', 'complete'].indexOf(currentStep as string) >= index
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-gray-500")
-                        }`}
-                    >
-                      <span className="text-xs sm:text-sm">{index + 1}</span>
-                    </div>
-                    <span className="text-xs text-gray-500 hidden sm:block">
-                      {step === 'select' ? 'Select' :
-                        step === 'upload' ? 'Upload' :
-                          step === 'crop' ? 'Crop' :
-                            step === 'preview' ? 'Preview' :
-                              'Share'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="hidden sm:block absolute left-0 right-0 mx-auto w-2/3 h-0.5 bg-gray-200 -z-10 mt-4">
-                <div
-                  className="h-full bg-blue-500 transition-all"
-                  style={{
-                    width:
-                      currentStep === 'select' ? '0%' :
-                        currentStep === 'upload' ? '25%' :
-                          currentStep === 'crop' ? '50%' :
-                            currentStep === 'preview' ? '75%' :
-                              '100%'
-                  }}
-                ></div>
-              </div>
-            </div>
-
-            {currentStep !== "select" && (
-              <button
-                onClick={handleReset}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md text-sm flex items-center transition-colors"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" /> Restart
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gray-50">
       <main className="flex-grow">
-        <div className="max-w-6xl mx-auto p-4 md:p-6 pb-16">
+        <div className="max-w-6xl mx-auto p-4 md:p-6 pb-16 pt-8">
           {currentStep === "select" && (
-            <div className="space-y-8">
-              <div className="text-center max-w-2xl mx-auto mb-8 mt-4">
-                <h1 className="text-2xl md:text-3xl font-medium text-gray-900 mb-2">Create Beautiful Photo Frames</h1>
-                <p className="text-gray-600">
-                  Select a frame, upload your photo, and create shareable moments in seconds.
-                </p>
+            <div className="space-y-8 pt-15">
+              <div className="text-center max-w-3xl mx-auto mb-10">
+                <div className="mb-6">
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Create Beautiful Photo Frames
+                  </h1>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    Transform your photos into stunning framed masterpieces. Choose from our curated collection, 
+                    upload your image, and create shareable moments in seconds.
+                  </p>
+                </div>
 
-                <div className="mt-6 relative max-w-md mx-auto">
-                  <input
-                    type="text"
-                    placeholder="Search frames..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full py-2 px-4 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <div className="relative max-w-lg mx-auto">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search frames by name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full py-3 px-5 pl-12 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                    />
+                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-4 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {searchQuery && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Showing {filteredFrames.length} {filteredFrames.length === 1 ? 'frame' : 'frames'} for &quot;{searchQuery}&quot;
+                    </p>
+                  )}
                 </div>
               </div>
 
               {filteredFrames.length === 0 ? (
-                <div className="text-center bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 text-gray-500 mb-3">
-                    <Search className="h-6 w-6" />
+                <div className="text-center bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-400 mb-4">
+                    <Search className="h-8 w-8" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No matching frames</h3>
-                  <p className="text-gray-600 mb-4">
-                    No frames match your search for &quot;{searchQuery}&quot;. Try a different search term.
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">No matching frames found</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    We couldn&apos;t find any frames matching &quot;{searchQuery}&quot;. Try adjusting your search terms or browse all available frames.
                   </p>
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                  >
-                    Clear Search
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    >
+                      Show All Frames
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      Clear Search
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-                  {/* Split frames into columns for masonry effect */}
-                  {Array.from({ length: Math.ceil(filteredFrames.length / 3) }).map((_, colIndex) => (
-                    <div key={colIndex} className="grid gap-4">
-                      {filteredFrames
-                        .slice(colIndex * 3, (colIndex + 1) * 3)
-                        .map((frame) => (
-                          <div
-                            key={frame._id}
-                            className="group relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200"
-                            onClick={() => handleSelectFrame(frame)}
-                            // onMouseEnter={() => setHoveredFrame(frame._id)}
-                            // onMouseLeave={() => setHoveredFrame(null)}
-                          >
-                            <div className="relative w-full">
-                              <NextImage
-                                src={frame.imageUrl}
-                                alt={frame.name}
-                                width={frame.dimensions.width}
-                                height={frame.dimensions.height}
-                                className="h-auto max-w-full rounded-lg object-cover"
-                                sizes="(max-width: 768px) 50vw, 25vw"
-                              />
-                              <div className="absolute top-2 right-2 z-10 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <button
-                                  onClick={(e) => handleCopyFrameLink(frame._id, e)}
-                                  className="p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
-                                  aria-label="Copy share link"
-                                  title="Copy share link"
-                                >
-                                  {frameCopySuccess[frame._id] ? (
-                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                  ) : (
-                                    <LinkIcon className="h-4 w-4 text-gray-500" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={(e) => toggleFavorite(frame._id, e)}
-                                  className="p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
-                                  aria-label={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
-                                  title={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
-                                >
-                                  <Heart
-                                    className={`h-4 w-4 ${favoriteFrames.includes(frame._id) ? "text-red-500 fill-red-500" : "text-gray-400"}`}
-                                  />
-                                </button>
-                              </div>
-                              <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <div className="bg-white shadow-md rounded-md py-2 px-4 text-blue-500 font-medium">
-                                  Select Frame
-                                </div>
-                              </div>
-                            </div>
-                            <div className="p-3 bg-white">
-                              <h3 className="text-sm font-medium text-gray-900 truncate">{frame.name}</h3>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {frame.dimensions.width} × {frame.dimensions.height} px
-                              </p>
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Available Frames
+                    </h2>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      {filteredFrames.length} {filteredFrames.length === 1 ? 'frame' : 'frames'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredFrames.map((frame) => (
+                    <div
+                      key={frame._id}
+                      className="group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 hover:border-blue-200"
+                      onClick={() => handleSelectFrame(frame)}
+                    >
+                      <div className="relative aspect-square overflow-hidden">
+                        <NextImage
+                          src={frame.imageUrl}
+                          alt={frame.name}
+                          width={frame.dimensions.width}
+                          height={frame.dimensions.height}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        />
+                        
+                        {/* Overlay with action buttons */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                            <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
+                              <span className="text-blue-600 font-medium text-sm">Select Frame</span>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <button
+                            onClick={(e) => handleCopyFrameLink(frame._id, e)}
+                            className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all duration-200 hover:scale-110"
+                            aria-label="Copy share link"
+                            title="Copy share link"
+                          >
+                            {frameCopySuccess[frame._id] ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <LinkIcon className="h-4 w-4 text-gray-600" />
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => toggleFavorite(frame._id, e)}
+                            className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all duration-200 hover:scale-110"
+                            aria-label={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
+                            title={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <Heart
+                              className={`h-4 w-4 transition-colors ${
+                                favoriteFrames.includes(frame._id) 
+                                  ? "text-red-500 fill-red-500" 
+                                  : "text-gray-600 hover:text-red-500"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Favorite indicator */}
+                        {favoriteFrames.includes(frame._id) && (
+                          <div className="absolute top-3 left-3">
+                            <div className="p-1.5 rounded-full bg-red-500 shadow-md">
+                              <Heart className="h-3 w-3 text-white fill-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Card content */}
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 text-base mb-1 line-clamp-2 leading-tight">
+                          {frame.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {frame.dimensions.width} × {frame.dimensions.height} px
+                        </p>
+                        {frame.usageCount && (
+                          <div className="flex items-center text-xs text-gray-400">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                              {frame.usageCount} uses
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
 
               {favoriteFrames.length > 0 && (
-                <div className="mt-10 pt-6 border-t border-gray-200">
-                  <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <Heart className="h-4 w-4 mr-2 text-red-500 fill-red-500" />
-                    Your Favorite Frames
-                  </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="mt-12 pt-8 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <Heart className="h-5 w-5 mr-2 text-red-500 fill-red-500" />
+                      Your Favorite Frames
+                    </h2>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      {favoriteFrames.length} {favoriteFrames.length === 1 ? 'frame' : 'frames'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {frames
                       .filter(frame => favoriteFrames.includes(frame._id))
                       .map((frame) => (
                         <div
                           key={`fav-${frame._id}`}
-                          className="group relative rounded-md overflow-hidden cursor-pointer bg-white border border-gray-200 hover:border-red-400 hover:shadow-sm transition-all"
+                          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 hover:border-red-200"
                           onClick={() => handleSelectFrame(frame)}
                         >
-                          <div
-                            style={{
-                              aspectRatio: `${frame.dimensions.width} / ${frame.dimensions.height}`,
-                            }}
-                            className="relative flex items-center justify-center bg-gray-50"
-                          >
+                          <div className="relative aspect-square overflow-hidden">
                             <NextImage
                               src={frame.imageUrl}
                               alt={frame.name}
                               width={frame.dimensions.width}
                               height={frame.dimensions.height}
-                              className="w-full h-full object-contain p-1"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                             />
+                            
+                            {/* Favorite badge */}
+                            <div className="absolute top-2 left-2">
+                              <div className="p-1.5 rounded-full bg-red-500 shadow-md">
+                                <Heart className="h-3 w-3 text-white fill-white" />
+                              </div>
+                            </div>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyFrameLink(frame._id, e);
-                              }}
-                              className="absolute top-1 right-1 z-10 p-1 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
-                              aria-label="Copy share link"
-                              title="Copy share link"
-                            >
-                              {frameCopySuccess[frame._id] ? (
-                                <CheckCircle2 className="h-3 w-3 text-green-500" />
-                              ) : (
-                                <LinkIcon className="h-3 w-3 text-gray-500" />
-                              )}
-                            </button>
+                            {/* Action button */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyFrameLink(frame._id, e);
+                                }}
+                                className="p-1.5 rounded-full bg-white/90 hover:bg-white shadow-md transition-all duration-200 hover:scale-110"
+                                aria-label="Copy share link"
+                                title="Copy share link"
+                              >
+                                {frameCopySuccess[frame._id] ? (
+                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <LinkIcon className="h-3 w-3 text-gray-600" />
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-1 group-hover:translate-y-0">
+                                <div className="bg-white/95 backdrop-blur-sm rounded-md px-3 py-1.5 shadow-lg">
+                                  <span className="text-red-600 font-medium text-xs">Select</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="p-2 border-t border-gray-100">
-                            <h3 className="text-xs font-medium text-gray-700 truncate">
+                          
+                          <div className="p-3">
+                            <h3 className="text-sm font-medium text-gray-900 truncate leading-tight">
                               {frame.name}
                             </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {frame.dimensions.width} × {frame.dimensions.height}
+                            </p>
                           </div>
                         </div>
                       ))
@@ -868,7 +915,7 @@ const UserPhotoFraming: React.FC = () => {
           )}
 
           {currentStep === "upload" && selectedFrame && (
-            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-15">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Upload Your Photo</h2>
                 <p className="text-sm text-gray-500 mt-1">Choose a photo to place in your selected frame</p>
@@ -928,15 +975,28 @@ const UserPhotoFraming: React.FC = () => {
                   </div>
 
                   <div className="w-full lg:w-1/2 lg:order-1">
-                    <div className="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg p-8 flex flex-col items-center justify-center min-h-[300px] relative transition-colors group">
+                    <div 
+                      className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center min-h-[300px] relative transition-colors group ${
+                        isDragOver 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-300 hover:border-blue-500'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
                       <div className="rounded-full p-4 mb-4 bg-gray-100 group-hover:bg-blue-50 transition-colors">
                         <Upload className="h-8 w-8 text-gray-400 group-hover:text-blue-500 transition-colors" />
                       </div>
                       <p className="text-base text-gray-700 text-center mb-2">
-                        Drag and drop an image, or <span className="text-blue-500 cursor-pointer hover:underline">browse</span>
+                        Drag and drop an image, or <span 
+                          className="text-blue-500 cursor-pointer hover:underline"
+                          onClick={() => document.getElementById('image-upload')?.click()}
+                        >browse</span>
                       </p>
                       <p className="text-sm text-gray-500 text-center">
-                        Supports JPG or PNG files (max 10MB)
+                        Supports JPG, PNG, JPEG, GIF files (max 10MB)
                       </p>
 
                       <input
@@ -944,8 +1004,18 @@ const UserPhotoFraming: React.FC = () => {
                         accept="image/*"
                         onChange={handleImageUpload}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="image-upload"
                       />
                     </div>
+
+                    {error && (
+                      <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 flex items-start">
+                        <div className="flex-shrink-0">
+                          <X className="h-5 w-5 text-red-400" />
+                        </div>
+                        <p className="ml-3">{error}</p>
+                      </div>
+                    )}
 
                     <div className="mt-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -969,13 +1039,14 @@ const UserPhotoFraming: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep("select")}
-                    className="px -4 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors flex items-center"
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors flex items-center"
                   >
                     <ChevronLeft className="h-4 w-4 mr-2" /> Back
                   </button>
 
                   <button
                     type="button"
+                    onClick={() => setCurrentStep("crop")}
                     disabled={!userImage}
                     className={`px-5 py-2 text-white rounded-md text-sm font-medium transition-colors flex items-center ${userImage
                       ? 'bg-blue-500 hover:bg-blue-600'
@@ -990,7 +1061,7 @@ const UserPhotoFraming: React.FC = () => {
           )}
 
           {currentStep === "crop" && selectedFrame && userImage && (
-            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-15">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Crop Your Photo</h2>
                 <p className="text-sm text-gray-500 mt-1">
@@ -1020,12 +1091,15 @@ const UserPhotoFraming: React.FC = () => {
                       aspect={aspect}
                       className="max-h-[500px] max-w-full"
                     >
-                      <img
+                      <NextImage
                         ref={userImgRef}
                         src={userImage}
                         alt="User uploaded image"
                         onLoad={onImageLoad}
                         className="max-h-[500px] max-w-full object-contain"
+                        width={500}
+                        height={500}
+                        sizes="(max-width: 768px) 100vw, 500px"
                       />
                     </ReactCrop>
                   </div>
@@ -1060,18 +1134,6 @@ const UserPhotoFraming: React.FC = () => {
                         </button>
                       )}
 
-                      {/* <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Personalize Your Frame
-                        </label>
-                        <input
-                          type="text"
-                          value={userName}
-                          onChange={(e) => setUserName(e.target.value)}
-                          placeholder="Enter your name (optional)"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div> */}
                     </div>
                   </div>
 
@@ -1132,7 +1194,7 @@ const UserPhotoFraming: React.FC = () => {
           )}
 
           {currentStep === "preview" && selectedFrame && croppedImage && (
-            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-15">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Preview Your Framed Photo</h2>
                 <p className="text-sm text-gray-500 mt-1">
@@ -1277,7 +1339,7 @@ const UserPhotoFraming: React.FC = () => {
           )}
 
           {currentStep === "complete" && finalImage && selectedFrame && (
-            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-15">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Your Framed Photo is Ready!</h2>
                 <p className="text-sm text-gray-500 mt-1">

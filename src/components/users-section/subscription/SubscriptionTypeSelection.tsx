@@ -8,44 +8,44 @@ interface SubscriptionTypeSelectionProps {
 export const SubscriptionTypeSelection: React.FC<SubscriptionTypeSelectionProps> = ({ setSubscriptionType }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
+    visible: { 
       opacity: 1,
-      transition: {
+      transition: { 
         staggerChildren: 0.1
       }
     }
   };
-
+  
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
+    visible: { 
+      y: 0, 
       opacity: 1,
-      transition: { type: "spring" as const, stiffness: 150 }
+      transition: { type: "spring", stiffness: 150 }
     }
   };
-
+  
   return (
-    <motion.div
+    <motion.div 
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       className="text-center mb-12"
     >
-      <motion.h2
-        variants={itemVariants}
+      <motion.h2 
+        variants={itemVariants} 
         className="text-3xl font-bold text-gray-900 mb-4"
       >
         Choose Your Subscription Type
       </motion.h2>
-      <motion.p
-        variants={itemVariants}
+      <motion.p 
+        variants={itemVariants} 
         className="text-xl text-gray-600 max-w-2xl mx-auto mb-12"
       >
         Select how you&apos;d like to manage your recurring donation
       </motion.p>
-
-      <motion.div
+      
+      <motion.div 
         variants={itemVariants}
         className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"
       >
@@ -89,7 +89,7 @@ export const SubscriptionTypeSelection: React.FC<SubscriptionTypeSelectionProps>
             </button>
           </div>
         </motion.div>
-
+        
         <motion.div
           whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
           className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer border-2 border-transparent hover:border-indigo-500 transition-all"

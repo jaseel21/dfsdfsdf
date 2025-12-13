@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Header = () => {
+interface HeaderProps {
+  isLoginPage?: boolean;
+}
+
+const Header = ({ isLoginPage = false }: HeaderProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
@@ -41,7 +45,9 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+        isLoginPage
+          ? "bg-gray-900/95 text-white backdrop-blur-md py-3 shadow-lg"
+          : isScrolled
           ? "bg-white/90 text-black dark:bg-gray-900/90 backdrop-blur-md py-2 shadow-md"
           : "bg-transparent py-4 text-white dark:text-gray-200"
       }`}
@@ -53,11 +59,29 @@ const Header = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center"
+            className="flex items-center space-x-3"
           >
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-              AIC-Amal
-            </span>
+            <img 
+              src="/aic-amal-logo.svg" 
+              alt="AIC Amal Logo" 
+              className="h-8 w-auto"
+            />
+            <div className="flex flex-col -space-y-1">
+              <span className={`text-lg font-semibold leading-tight ${
+                isLoginPage || isScrolled 
+                  ? "text-gray-900 dark:text-white" 
+                  : "text-white"
+              }`}>
+                Amal App
+              </span>
+              <span className={`text-xs leading-tight ${
+                isLoginPage || isScrolled 
+                  ? "text-gray-600 dark:text-gray-300" 
+                  : "text-white/80"
+              }`}>
+                Akode Islamic Centre
+              </span>
+            </div>
           </motion.div>
         </Link>
 
@@ -73,9 +97,11 @@ const Header = () => {
               key={item.name}
               href={item.path}
               className={`relative px-1 py-2 text-sm font-medium transition-colors duration-300 ${
-                isScrolled
-                  ? "text-gray-900 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400"
-                  : "text-white dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400"
+                isLoginPage 
+                  ? "text-white hover:text-purple-400"
+                  : isScrolled
+                  ? "text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400"
+                  : "text-white dark:text-gray-200 hover:text-purple-300 dark:hover:text-purple-400"
               }`}
             >
               {item.name}
@@ -112,9 +138,15 @@ const Header = () => {
             whileTap={{ scale: 0.9 }}
             onClick={toggleTheme}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-              theme === "dark"
-                ? " text-yellow-300 "
-                : ` text-gray-100 ${isScrolled ? 'text-gray-900' : 'text-white'}`
+              isLoginPage
+                ? "text-white hover:bg-white/10"
+                : isScrolled
+                ? theme === "dark"
+                  ? "text-yellow-400 hover:bg-yellow-400/10"
+                  : "text-gray-600 hover:bg-gray-100"
+                : theme === "dark"
+                ? "text-yellow-300 hover:bg-white/10"
+                : "text-white hover:bg-white/10"
             }`}
             aria-label="Toggle dark mode"
           >
@@ -161,7 +193,13 @@ const Header = () => {
         >
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-gray-800 dark:text-white focus:outline-none"
+            className={`focus:outline-none ${
+              isLoginPage 
+                ? "text-white" 
+                : isScrolled 
+                ? "text-gray-800 dark:text-white" 
+                : "text-white dark:text-gray-200"
+            }`}
             aria-label="Toggle menu"
           >
             <svg
@@ -199,7 +237,7 @@ const Header = () => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden bg-white dark:bg-gray-800 shadow-lg"
+            className="md:hidden bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700"
           >
             <div className="container mx-auto py-4 px-4">
               <nav className="flex flex-col space-y-4">
@@ -214,9 +252,7 @@ const Header = () => {
                       href={item.path}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`block px-4 py-2 text-base font-medium rounded-lg transition-colors duration-300 ${
-                        isScrolled
-                          ? "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          : "text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                        "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                     >
                       {item.name}
@@ -235,8 +271,8 @@ const Header = () => {
                     onClick={toggleTheme}
                     className={`w-full text-left px-4 py-2 text-base font-medium rounded-lg transition-colors duration-300 ${
                       theme === "dark"
-                        ? "bg-gray-800 text-yellow-300 hover:bg-gray-700"
-                        : "bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
+                        ? "bg-gray-700 dark:bg-gray-700 text-yellow-300 hover:bg-gray-600 dark:hover:bg-gray-600"
+                        : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/30"
                     }`}
                     aria-label="Toggle dark mode"
                   >
@@ -253,7 +289,7 @@ const Header = () => {
                   className="pt-2"
                 >
                   <Link href="/donation">
-                    <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-medium text-base shadow-md">
+                    <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-3 rounded-lg font-medium text-base shadow-md transition-all duration-300">
                       Donate Now
                     </button>
                   </Link>

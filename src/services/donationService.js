@@ -19,6 +19,44 @@ export const donationService = {
   } = {}) {
     await connectToDatabase();
     
+    // Debug: Check what subscription data we actually have
+    if (selectedType && selectedType.includes('Subscription')) {
+      console.log('SUBSCRIPTION DEBUG: Starting subscription query for:', selectedType);
+      
+      // First, let's see what types are actually in the database
+      const allTypes = await Donation.distinct('type');
+      console.log('SUBSCRIPTION DEBUG: All donation types in DB:', allTypes);
+      
+      // Check what documents have subscription-related fields
+      const subscriptionDocs = await Donation.find({
+        $or: [
+          { subscriptionId: { $exists: true, $ne: null } },
+          { method: { $exists: true, $ne: null } },
+          { period: { $exists: true, $ne: null } },
+          { razorpaySubscriptionId: { $exists: true, $ne: null } }
+        ]
+      }).limit(5).lean();
+      
+      console.log('SUBSCRIPTION DEBUG: Found', subscriptionDocs.length, 'docs with subscription fields');
+      subscriptionDocs.forEach((doc, index) => {
+        console.log(`SUBSCRIPTION DEBUG: Doc ${index + 1}:`, {
+          _id: doc._id,
+          type: doc.type,
+          method: doc.method,
+          subscriptionId: doc.subscriptionId,
+          period: doc.period,
+          razorpaySubscriptionId: doc.razorpaySubscriptionId,
+          name: doc.name
+        });
+      });
+      
+      // Let's also check if there are ANY documents with specific methods
+      const autoMethodDocs = await Donation.countDocuments({ method: 'auto' });
+      const manualMethodDocs = await Donation.countDocuments({ method: 'manual' });
+      console.log('SUBSCRIPTION DEBUG: Documents with method=auto:', autoMethodDocs);
+      console.log('SUBSCRIPTION DEBUG: Documents with method=manual:', manualMethodDocs);
+    }
+    
     // Build the filter query
     const query = {};
     
@@ -32,9 +70,42 @@ export const donationService = {
       ];
     }
     
-    // Type filter
+    // Type filter - handle subscription types specially
     if (selectedType) {
-      query.type = selectedType;
+      console.log('FILTER DEBUG: Filtering by type:', selectedType);
+      
+      if (selectedType === 'Subscription-Auto') {
+        // Simple query for auto subscriptions
+        console.log('FILTER DEBUG: Setting up Subscription-Auto query');
+        query.method = 'auto';
+        query.type = { $not: { $regex: '^Sponsor', $options: 'i' } };
+      } else if (selectedType === 'Subscription-Manual') {
+        // Simple query for manual subscriptions
+        console.log('FILTER DEBUG: Setting up Subscription-Manual query');
+        query.$and = [
+          {
+            $or: [
+              { method: 'manual' },
+              { method: 'Manual' },
+              { method: { $exists: false } },
+              { method: null }
+            ]
+          },
+          // Must have subscription indicators
+          {
+            $or: [
+              { subscriptionId: { $exists: true, $ne: null } },
+              { period: { $exists: true, $ne: null } }
+            ]
+          },
+          // Exclude sponsorships
+          { type: { $not: { $regex: '^Sponsor', $options: 'i' } } }
+        ];
+      } else {
+        // Regular type filtering for non-subscription types
+        console.log('FILTER DEBUG: Setting up regular type query for:', selectedType);
+        query.type = selectedType;
+      }
     }
     
     // Status filter
@@ -60,7 +131,54 @@ export const donationService = {
     
     // Build sort options
     const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    
+    // Handle special cases for sorting
+    if (sortBy === 'amount') {
+      // Ensure numeric sorting for amount
+      sortOptions.amount = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'name') {
+      // Case-insensitive sorting for donor names
+      sortOptions.name = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'createdAt') {
+      // Date sorting
+      sortOptions.createdAt = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'razorpayOrderId') {
+      // String sorting for order ID
+      sortOptions.razorpayOrderId = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      // Default sorting
+      sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    }
+
+    console.log('🎯 SORT DEBUG: Applied sort options:', sortOptions, 'for sortBy:', sortBy, 'sortOrder:', sortOrder);
+    console.log('🔍 SORT DEBUG: Query parameters received:', {
+      sortBy, sortOrder, searchText, selectedType, selectedStatus, page, limit
+    });
+    
+    // Debug logging for subscription filtering
+    if (selectedType && selectedType.includes('Subscription')) {
+      console.log('FILTER DEBUG: Final query for', selectedType, ':', JSON.stringify(query, null, 2));
+      
+      // Let's also see what actual documents exist with subscription fields
+      const sampleDocs = await Donation.find({
+        $or: [
+          { subscriptionId: { $exists: true } },
+          { method: { $exists: true } },
+          { period: { $exists: true } },
+          { razorpaySubscriptionId: { $exists: true } }
+        ]
+      }).limit(3).lean();
+      
+      console.log('FILTER DEBUG: Sample docs with subscription fields:', JSON.stringify(sampleDocs.map(doc => ({
+        _id: doc._id,
+        type: doc.type,
+        method: doc.method,
+        subscriptionId: doc.subscriptionId,
+        period: doc.period,
+        razorpaySubscriptionId: doc.razorpaySubscriptionId,
+        name: doc.name
+      })), null, 2));
+    }
     
     // For exports, skip pagination
     if (exportAll) {
@@ -266,13 +384,35 @@ function formatDonation(donation) {
   } else if (donation.razorpayOrderId && donation.razorpayOrderId.startsWith('MANUAL-')) {
     paymentMethod = 'Manual Entry';
   }
+
+  // Determine donation type with subscription handling
+  let donationType = donation.type || 'General';
+  
+  // Check if this is a subscription donation - but exclude sponsorships
+  // Only treat as subscription if it has subscription-related fields AND is not a sponsorship
+  const isSponsorship = donationType.includes('Sponsor-') || donationType.startsWith('Sponsor');
+  const hasSubscriptionFields = donation.subscriptionId || donation.method || donation.period;
+  
+  if (hasSubscriptionFields && !isSponsorship) {
+    const subscriptionMethod = donation.method || 'manual'; // default to manual if not specified
+    const baseType = donation.type || 'General';
+    
+    // Create subscription type display only for actual subscriptions
+    if (baseType === 'General' || baseType === 'Subscription') {
+      donationType = `Subscription-${subscriptionMethod === 'auto' ? 'Auto' : 'Manual'}`;
+    } else {
+      // For other types like Yatheem, Hafiz that are subscriptions
+      donationType = `${baseType}-Subscription-${subscriptionMethod === 'auto' ? 'Auto' : 'Manual'}`;
+    }
+  }
+  // If it's a sponsorship, keep the original type (Sponsor-Yatheem, Sponsor-Hafiz, etc.)
   
   return {
     id: donationId,
     _id: donation._id.toString(),
     donor: donation.name || 'Anonymous',
     amount: formattedAmount,
-    type: donation.type || 'N/A',
+    type: donationType,
     status: donation.status || 'N/A',
     date: formattedDate,
     displayDate,

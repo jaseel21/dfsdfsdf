@@ -25,25 +25,25 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
 }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
+    visible: { 
       opacity: 1,
-      transition: {
+      transition: { 
         staggerChildren: 0.1
       }
     }
   };
-
+  
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
+    visible: { 
+      y: 0, 
       opacity: 1,
-      transition: { type: "spring" as const, stiffness: 150 }
+      transition: { type: "spring", stiffness: 150 }
     }
   };
 
   return (
-    <motion.div
+    <motion.div 
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -56,7 +56,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
             We&apos;ve sent a verification code to <span className="font-medium">+91 {phoneNumber}</span>
           </p>
         </div>
-
+        
         <form onSubmit={handleVerifyOtp} className="p-6">
           <div className="mb-6">
             <label className="block text-gray-700 font-medium mb-4 text-center">
@@ -81,7 +81,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
               <p className="mt-2 text-red-600 text-center text-sm">{otpError}</p>
             )}
           </div>
-
+          
           <button
             type="submit"
             disabled={isVerifying || otpInput.some(digit => !digit)}
@@ -99,10 +99,10 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
             }
           </button>
         </form>
-
+        
         <div className="px-6 pb-6 text-center">
           <p className="text-gray-600 mb-2">Didn&apos;t receive the code?</p>
-          <button
+          <button 
             className="text-indigo-600 hover:text-indigo-800 font-medium"
             onClick={() => {
               // Resend OTP logic
@@ -113,9 +113,9 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
           </button>
         </div>
       </motion.div>
-
+      
       <motion.div variants={itemVariants} className="text-center">
-        <button
+        <button 
           onClick={() => setLoginStep("phone")}
           className="text-indigo-600 hover:text-indigo-800 font-medium"
         >

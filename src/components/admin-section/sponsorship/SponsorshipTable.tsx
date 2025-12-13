@@ -1,4 +1,5 @@
-import { ArrowUpDown, Eye, Edit, Trash2, Users } from "lucide-react";
+import React from "react";
+import { ArrowUpDown, Eye, Edit, Trash2, Users, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Sponsorship } from "@/app/admin/(admin)/sponsorships/list/page";
 
@@ -8,6 +9,7 @@ interface SponsorshipTableProps {
   onEdit: (sponsorship: Sponsorship) => void;
   onDelete: (sponsorship: Sponsorship) => void;
   onViewDetails: (sponsorship: Sponsorship) => void;
+  onAssignYatheem?: (sponsorship: Sponsorship) => void;
   toggleSort: (column: string) => void;
   sortBy: string;
   sortOrder: "asc" | "desc";
@@ -18,6 +20,7 @@ const SponsorshipTable: React.FC<SponsorshipTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+  onAssignYatheem,
   toggleSort,
   sortBy,
 }) => {
@@ -176,7 +179,19 @@ const SponsorshipTable: React.FC<SponsorshipTableProps> = ({
                 {formatAmount(sponsorship.amount)}
               </td>
               <td className="p-3 border-b border-white/10">
-                <TypeBadge type={sponsorship.type} />
+                <div className="flex items-center gap-2">
+                  <TypeBadge type={sponsorship.type} />
+                  {sponsorship.type === "Sponsor-Yatheem" && (sponsorship as any).yatheemId && (
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+                      Yatheem Assigned
+                    </span>
+                  )}
+                  {sponsorship.type === "Sponsor-Yatheem" && !(sponsorship as any).yatheemId && (
+                    <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-medium">
+                      Not Assigned
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="p-3 border-b border-white/10">
                 <PeriodBadge period={sponsorship.period} />
@@ -201,6 +216,15 @@ const SponsorshipTable: React.FC<SponsorshipTableProps> = ({
                   >
                     <Edit className="h-4 w-4" />
                   </Link>
+                  {sponsorship.type === "Sponsor-Yatheem" && onAssignYatheem && (
+                    <button
+                      onClick={() => onAssignYatheem(sponsorship)}
+                      className="p-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors"
+                      title="Assign Yatheem"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => onDelete(sponsorship)}
                     className="p-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"
@@ -228,7 +252,19 @@ const SponsorshipTable: React.FC<SponsorshipTableProps> = ({
                 </div>
                 <div className="text-xs text-gray-500">{sponsorship.phone}</div>
               </div>
-              <TypeBadge type={sponsorship.type} />
+              <div className="flex flex-col items-end gap-1">
+                <TypeBadge type={sponsorship.type} />
+                {sponsorship.type === "Sponsor-Yatheem" && (sponsorship as any).yatheemId && (
+                  <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+                    Yatheem Assigned
+                  </span>
+                )}
+                {sponsorship.type === "Sponsor-Yatheem" && !(sponsorship as any).yatheemId && (
+                  <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-medium">
+                    Not Assigned
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between mt-3">
@@ -269,6 +305,15 @@ const SponsorshipTable: React.FC<SponsorshipTableProps> = ({
                 >
                   <Edit className="h-4 w-4" />
                 </button>
+                {sponsorship.type === "Sponsor-Yatheem" && onAssignYatheem && (
+                  <button
+                    onClick={() => onAssignYatheem(sponsorship)}
+                    className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors"
+                    title="Assign Yatheem"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => onDelete(sponsorship)}
                   className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"

@@ -1,3 +1,4 @@
+"use client";
 // src/app/admin/(admin)/backup/page.tsx
 import BackupRestore from "@/components/BackupRestore/BackupRestore";
 

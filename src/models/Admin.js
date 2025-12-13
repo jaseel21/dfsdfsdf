@@ -20,6 +20,10 @@ const adminSchema = new mongoose.Schema({
     type: String,
     default: 'Admin',
   },
+  permissions: {
+    type: [String],
+    default: [],
+  },
 });
 
 export default mongoose.models.Admin || mongoose.model('Admin', adminSchema);

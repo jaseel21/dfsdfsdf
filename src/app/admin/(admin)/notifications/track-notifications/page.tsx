@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -120,7 +120,7 @@ export default function TrackNotificationsPage() {
         setIsLoading(false);
       }
     },
-    [searchText, selectedChannel, selectedStatus, dateFrom, dateTo, sortBy, sortOrder]
+    [searchText, selectedChannel, selectedStatus, dateFrom, dateTo, sortBy, sortOrder, totalPages]
   );
 
   // Debounce function for filter changes
@@ -135,7 +135,7 @@ export default function TrackNotificationsPage() {
   // Debounced fetch for filter changes
   const debouncedFetchNotifications = useMemo(
     () => debounce(() => fetchNotifications(1), 500),
-    [fetchNotifications]
+    [debounce, fetchNotifications]
   );
 
   // Fetch notifications on mount only once
@@ -149,12 +149,12 @@ export default function TrackNotificationsPage() {
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array for mount-only fetch
+  }, [fetchNotifications]); // Add fetchNotifications as dependency
 
   // Fetch notifications when sorting changes
   useEffect(() => {
     fetchNotifications(currentPage);
-  }, [sortBy, sortOrder, fetchNotifications]);
+  }, [sortBy, sortOrder, fetchNotifications, currentPage]);
 
   // Trigger debounced fetch when filter states change
   useEffect(() => {

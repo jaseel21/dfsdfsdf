@@ -403,7 +403,7 @@ async function generateSinglePDF(
             <div class="receipt-note">Thank you for your generous contribution!</div>
             <p>Akode Islamic Centre | Oorkadavu, Malappuram, Kerala</p>
             <p>This receipt is electronically generated and is valid without signature.</p>
-            <p>For any inquiries, please contact: info@aicamal.org</p>
+            <p>For any inquiries, please contact: hello@aicamal.app</p>
           </div>
         </div>
       </body>

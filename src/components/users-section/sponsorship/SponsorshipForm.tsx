@@ -37,6 +37,9 @@ interface SponsorshipFormProps {
   onBack: () => void;
   onSubmitSuccess: () => void;
   onSubmit?: (formData: FormData) => Promise<void>;
+  sponsorPhoneNumber?: string; // For pre-filling phone from verified session
+  selectedAmount?: number; // For tracking selected amount
+  paymentType?: "main" | "extra"; // For extra expense payments
 }
 
 interface FormData {
@@ -56,10 +59,13 @@ export const SponsorshipForm = ({
   activeOption,
   onBack,
   onSubmit,
+  sponsorPhoneNumber,
+  selectedAmount,
+  paymentType = "main",
 }: SponsorshipFormProps) => {
   const [form, setForm] = useState<FormData>({
     fullName: "",
-    phoneNumber: "",
+    phoneNumber: sponsorPhoneNumber || "",
     type: activeProgram,
     email: "",
     location: "",
@@ -68,6 +74,13 @@ export const SponsorshipForm = ({
     amount: activeOption.finalAmount,
     period: activeOption.duration,
   });
+
+  // Update phone number when sponsorPhoneNumber prop changes
+  useEffect(() => {
+    if (sponsorPhoneNumber) {
+      setForm((prev) => ({ ...prev, phoneNumber: sponsorPhoneNumber }));
+    }
+  }, [sponsorPhoneNumber]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { startLoading, stopLoading } = useLoading();
@@ -159,20 +172,22 @@ export const SponsorshipForm = ({
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpaySignature: response.razorpay_signature,
+                selectedAmount: selectedAmount, // Pass selectedAmount for tracking
+                paymentType: paymentType, // Pass paymentType (main or extra)
               };
   
               startLoading();
-              // const saveResponse = await fetch("/api/sponsorships/create", {
-              //   method: "POST",
-              //   headers: {
-              //     "Content-Type": "application/json",
-              //     "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-              //   },
-              //   body: JSON.stringify(paymentData),
-              // });
+              const saveResponse = await fetch("/api/sponsorships/create", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+                },
+                body: JSON.stringify(paymentData),
+              });
   
-              // const saveData: { id: string; error?: string } = await saveResponse.json();
-              // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
+              const saveData: { id: string; error?: string } = await saveResponse.json();
+              if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save donation");
   
               router.push(
                 `/sponsorship/success?donationId=${"no id"}&amount=${form.amount}&name=${encodeURIComponent(
@@ -359,7 +374,7 @@ export const SponsorshipForm = ({
                   </svg>
                   Processing...
                 </span>
-              ) : (
+              ) : ( 
                 "Complete Sponsorship"
               )}
             </motion.button>

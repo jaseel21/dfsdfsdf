@@ -17,7 +17,12 @@ export function FooterInfo() {
                 </div>
                 <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Questions?</h3>
-                    <p className="text-gray-700 dark:text-gray-300 text-sm">Contact our team at <span className="text-purple-700 dark:text-purple-400">support@example.org</span>.</p>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                        Contact our team at{" "}
+                        <span className="text-purple-700 dark:text-purple-400">
+                            hello@aicamal.app
+                        </span>
+                    </p>
                 </div>
             </div>
         </div>

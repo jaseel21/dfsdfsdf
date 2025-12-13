@@ -23,7 +23,15 @@ export async function POST(req) {
     }
 
    
-    const totalCount = { weekly: 52, monthly: 12, yearly: 1 }[period] || 12;
+    // Extended subscription support for 15 years
+    // Razorpay supports up to 100 years, but 15 years is reasonable for most use cases
+    const totalCount = { 
+      daily: 5475,    // 15 years × 365 days
+      weekly: 780,    // 15 years × 52 weeks
+      monthly: 180,   // 15 years × 12 months
+      yearly: 15      // 15 years
+    }[period] || 180;
+    
     const razorpaySubscription = await razorpay.subscriptions.create({
       plan_id: planId,
       customer_notify: 1,

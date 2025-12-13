@@ -19,20 +19,20 @@ const WhyDonate = ({ reasons }: WhyDonateProps) => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring" as const, stiffness: 100 }
+      transition: { type: "spring", stiffness: 100 }
     }
   };
 
   return (
-    <motion.div
+    <motion.div 
       className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
       variants={itemVariants}
     >
       <h3 className="text-2xl font-bold text-indigo-900 dark:text-indigo-200 mb-6">Why Donate?</h3>
       <div className="space-y-4">
         {reasons.map((item, index) => (
-          <motion.div
-            key={index}
+          <motion.div 
+            key={index} 
             className="flex items-start p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all"
             whileHover={{ y: -5, x: 0 }}
             transition={{ type: "spring", stiffness: 300 }}

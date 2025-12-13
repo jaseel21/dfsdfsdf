@@ -1,6 +1,6 @@
 // src/app/campaigns/track/page.jsx
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation"; // Add useRouter
 import {
@@ -18,6 +18,8 @@ import {
   MapPin,
   AlertCircle,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 export default function TrackProgressPage() {
   const searchParams = useSearchParams();
@@ -48,6 +50,10 @@ export default function TrackProgressPage() {
     physicalDonations: [],
     physicalTotalCount: 0,
   });
+
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || session?.user?.permissions?.includes("campaigns_track");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,6 +151,9 @@ export default function TrackProgressPage() {
 
     fetchData();
   }, [campaignId, router]); // Add router to dependencies
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   if (isLoading) {
     return (

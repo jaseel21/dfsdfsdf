@@ -58,10 +58,9 @@ export const setupRecaptcha = async (containerId: string = 'recaptcha-container'
   
   try {
     if (typeof window !== 'undefined') {
-      // Clear previous recaptcha instance if it exists
+      // If already initialized, reuse existing verifier
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+        return true;
       }
       
       const containerElement = document.getElementById(containerId);
@@ -86,7 +85,16 @@ export const setupRecaptcha = async (containerId: string = 'recaptcha-container'
         }
       });
       
-      await window.recaptchaVerifier.render();
+      try {
+        await window.recaptchaVerifier.render();
+      } catch (renderErr: any) {
+        // If already rendered on this element, treat as ready
+        if (renderErr?.message?.includes('already been rendered')) {
+          console.warn('reCAPTCHA already rendered, reusing existing instance.');
+          return true;
+        }
+        throw renderErr;
+      }
       return true;
     }
     return false;

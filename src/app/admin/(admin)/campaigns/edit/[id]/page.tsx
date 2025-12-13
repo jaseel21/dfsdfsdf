@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -13,6 +13,8 @@ import {
   Ruler,
   Infinity,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 interface Params {
   id: string; // Define the shape of params
@@ -37,6 +39,9 @@ interface FormData {
 
 export default function EditCampaignPage({ params }: { params: Params }) {
   const { id } = params; // Destructure id directly, no Promise to await
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("campaigns_edit");
 
   const initialFormData: FormData = {
     name: "",
@@ -135,6 +140,9 @@ export default function EditCampaignPage({ params }: { params: Params }) {
       }
     };
   }, [id, previewImage]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import React from "react";
 
 interface AlertProps {
   variant: "success" | "error" | "warning" | "info"; // Alert type

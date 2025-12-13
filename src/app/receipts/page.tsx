@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import PhoneVerification from "@/components/users-section/receipts/PhoneVerification";
 import OTPVerification from "@/components/users-section/receipts/OTPVerification";
 import ReceiptList from "@/components/users-section/receipts/ReceiptList";

@@ -1,4 +1,4 @@
-import  { JSX, useState } from 'react';
+import React, { JSX, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 

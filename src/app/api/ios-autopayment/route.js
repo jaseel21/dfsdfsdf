@@ -10,13 +10,15 @@ const razorpay = new Razorpay({
 });
 
 const getBillingCycles = (period) => {
+  // Extended subscription support for 15 years
+  // Razorpay supports up to 100 years, but 15 years is reasonable for most use cases
   const periodMap = {
-    daily: 30,
-    weekly: 52,
-    monthly: 12,
-    yearly: 1,
+    daily: 5475,    // 15 years × 365 days
+    weekly: 780,    // 15 years × 52 weeks
+    monthly: 180,   // 15 years × 12 months
+    yearly: 15      // 15 years
   };
-  return periodMap[period.toLowerCase()] || 12;
+  return periodMap[period.toLowerCase()] || 180;
 };
 
 export async function POST(req) {
@@ -25,27 +27,27 @@ export async function POST(req) {
 
     const body = await req.json();
     const { fullName,
-       location,
-        amount,
-         period, 
-         phone,
-          email,
-          callbackUrl
-        } = body;
+      location,
+      amount,
+      period,
+      phone,
+      email,
+      callbackUrl
+    } = body;
 
-console.log(body);
+    console.log(body);
 
-        function standardizePhoneNumber(phone, defaultCountryCode = "+91") {
-  if (!phone) return ""; 
-  const cleanPhone = phone.replace(/\D/g, "");
-  if (phone.startsWith("+")) {
-    return phone; 
-  }
-  return `${defaultCountryCode}${cleanPhone}`;
-}
+    // function standardizePhoneNumber(phone, defaultCountryCode = "+91") {
+    //   if (!phone) return "";
+    //   const cleanPhone = phone.replace(/\D/g, "");
+    //   if (phone.startsWith("+")) {
+    //     return phone;
+    //   }
+    //   return `${defaultCountryCode}${cleanPhone}`;
+    // }
 
-// Standardize the phone number
-const standardizedPhone = standardizePhoneNumber(phone);
+    // Standardize the phone number
+    // const standardizedPhone = standardizePhoneNumber(phone);
 
     if (!fullName || !location || !amount || !period || !phone) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -82,8 +84,8 @@ const standardizedPhone = standardizePhoneNumber(phone);
       notes: {
         razorpaySubscriptionId: "", // Subscription ID added here
         name: fullName || "Anonymous",
-        amount: amountInPaise, // Convert to rupees and store as string
-        phoneNumber: standardizedPhone,
+        amount: amount, // Convert to rupees and store as string
+        phoneNumber: phone,
         district: district || "",
         type: "Subscription-auto",
         method: "auto",

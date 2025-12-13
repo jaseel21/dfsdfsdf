@@ -85,6 +85,7 @@ export const authOptions = {
             email: auth.email || '',
             name: auth.name || 'Unknown',
             role: auth.role || 'user',
+            permissions: auth.permissions || [],
           };
         } catch (error) {
           console.error(" Error verifying Firebase token:", error);
@@ -99,6 +100,7 @@ export const authOptions = {
             token.id = user.id;
             token.phone = user.phone;
             token.role = user.role; //  Ensure role is included
+            token.permissions = user.permissions || [];
         }
         // console.log("JWT Token:", token); // Debugging
         return token;
@@ -108,14 +110,20 @@ export const authOptions = {
             session.user.id = token.id;
             session.user.phone = token.phone;
             session.user.role = token.role; //  Ensure role is in session      
+            session.user.permissions = token.permissions || [];
         }
         // console.log("Session Updated:", session); // Debugging
         return session;
     },
-  }
-  ,
+    async signOut() {
+      // Clean up any session-related data
+      return { redirectTo: "/auth/admin/sign-in" };
+    },
+  },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
   pages: {
     signIn: "/auth/signin",

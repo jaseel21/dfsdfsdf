@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface DonationStats {
   totalDonations: number;
@@ -13,6 +13,7 @@ interface DonationStats {
   subscribersDonorCount: number;
   totalVolunteers: number;
   activeCampaigns: number;
+  totalDonors: number;
 }
 
 const DonationMetrics: React.FC = () => {
@@ -28,6 +29,7 @@ const DonationMetrics: React.FC = () => {
     subscribersDonorCount: 0,
     totalVolunteers: 0,
     activeCampaigns: 0,
+    totalDonors: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ const DonationMetrics: React.FC = () => {
     async function fetchDonations() {
       try {
         setLoading(true);
+        
+        // Fetch main donation stats
         const response = await fetch("/api/find_total", {
           headers: {
             "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
@@ -46,7 +50,26 @@ const DonationMetrics: React.FC = () => {
         });
         if (!response.ok) throw new Error("Failed to fetch data");
         const data: DonationStats = await response.json();
-        setStats(data);
+        
+        // Fetch total donors count from donor analytics API
+        const donorResponse = await fetch("/api/donations/donor-analytics?limit=1", {
+          headers: {
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+          },
+        });
+        
+        let totalDonors = 0;
+        if (donorResponse.ok) {
+          const donorData = await donorResponse.json();
+          if (donorData.success && donorData.overallStats) {
+            totalDonors = donorData.overallStats.totalDonors || 0;
+          }
+        }
+        
+        setStats({
+          ...data,
+          totalDonors
+        });
       } catch (error) {
         console.error("Error fetching donation stats:", error);
         setError("Failed to load donation metrics");
@@ -152,8 +175,8 @@ const DonationMetrics: React.FC = () => {
           <p className="text-2xl font-bold text-brand-600 dark:text-white">₹{stats.generalTotal.toLocaleString()}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 backdrop-blur-sm p-5 rounded-xl hover:bg-white/30 transition-all duration-300 text-center shadow-lg">
-          <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Building Total</h4>
-          <p className="text-2xl font-bold text-brand-600 dark:text-white">₹{stats.buildingTotal.toLocaleString()}</p>
+          <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Total Donors</h4>
+          <p className="text-2xl font-bold text-brand-600 dark:text-white">{stats.totalDonors}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 backdrop-blur-sm p-5 rounded-xl hover:bg-white/30 transition-all duration-300 text-center shadow-lg">
           <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Subscription Donors</h4>

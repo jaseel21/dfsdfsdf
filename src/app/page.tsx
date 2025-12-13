@@ -5,6 +5,7 @@ import Link from "next/link";
 import HeroSection from "@/components/users-section/home/HeroSection";
 import FeaturesSection from "@/components/users-section/home/FeaturesSection";
 import AdditionalFeaturesSection from "@/components/users-section/home/AdditionalFeaturesSection";
+import AppShowcaseSection from "@/components/users-section/home/AppShowcaseSection";
 import Footer from "@/components/users-section/home/Footer";
 import AboutSection from '@/components/users-section/home/AboutSection';
 
@@ -50,6 +51,7 @@ export default function Home() {
       <main>
         <HeroSection />
         <FeaturesSection />
+        <AppShowcaseSection />
         <AdditionalFeaturesSection />
         <AboutSection/>
         {/* <TestimonialsSection /> */}

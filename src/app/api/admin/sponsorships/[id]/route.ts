@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import connectToDatabase from '@/lib/db';
 import Sponsor from '@/models/Sponsor';
+import Yatheem from '@/models/Yatheem';
 import mongoose from 'mongoose';
 
 // Define the sponsorship interface including Razorpay fields
@@ -31,7 +32,7 @@ interface Sponsorship {
 // GET handler to fetch a single sponsorship by ID
 export async function GET(req: NextRequest) {
     try {
-        await dbConnect();
+        await connectToDatabase();
 
         // Await params to resolve dynamic route parameters
         const params = await req.nextUrl.pathname.split('/').pop();
@@ -45,8 +46,10 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        // Find sponsorship by ID
-        const sponsorship = await Sponsor.findById(id).lean() as Sponsorship;
+        // Find sponsorship by ID with yatheem population
+        const sponsorship = await Sponsor.findById(id)
+          .populate('yatheemId', 'name phone place class school')
+          .lean() as any;
 
         if (!sponsorship) {
             return NextResponse.json(
@@ -90,7 +93,7 @@ export async function GET(req: NextRequest) {
 // PUT handler to update a sponsorship by ID
 export async function PUT(req: NextRequest) {
     try {
-        await dbConnect();
+        await connectToDatabase();
 
         // Await params to resolve dynamic route parameters
         const params = await req.nextUrl.pathname.split('/').pop();
@@ -120,12 +123,22 @@ export async function PUT(req: NextRequest) {
             Object.entries(data).filter(([key]) => !protectedFields.includes(key))
         );
 
+        // Handle yatheemId update - if setting to null, unassign from yatheem
+        if ('yatheemId' in updateData && updateData.yatheemId === null) {
+            const sponsor = await Sponsor.findById(id);
+            if (sponsor && sponsor.yatheemId) {
+                await Yatheem.findByIdAndUpdate(sponsor.yatheemId, { $unset: { sponsorId: "" } });
+            }
+        }
+
         // Update sponsorship
         const updatedSponsor = await Sponsor.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).lean() as Sponsorship;
+        )
+        .populate('yatheemId', 'name phone place class school')
+        .lean() as any;
 
         if (!updatedSponsor) {
             return NextResponse.json(
@@ -147,7 +160,7 @@ export async function PUT(req: NextRequest) {
 // DELETE handler to delete a sponsorship by ID
 export async function DELETE(req: NextRequest) {
     try {
-        await dbConnect();
+        await connectToDatabase();
 
         // Await params to resolve dynamic route parameters
         const params = await req.nextUrl.pathname.split('/').pop();

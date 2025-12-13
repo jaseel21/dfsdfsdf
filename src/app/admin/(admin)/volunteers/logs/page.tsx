@@ -1,6 +1,6 @@
 // src/app/(admin)/volunteers/logs/page.tsx
 "use client";
-
+import React from "react";
 
 export default function ViewLogsPage() {
   return (

@@ -1,3 +1,4 @@
+import React from 'react';
 
 const RefundReturnPolicy: React.FC = () => {
   return (

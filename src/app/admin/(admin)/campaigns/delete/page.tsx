@@ -1,5 +1,5 @@
 "use client";
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
@@ -10,6 +10,8 @@ import {
   Info,
   Loader2
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import NoAccess from "@/components/NoAccess";
 
 // Define campaign data type
 interface CampaignData {
@@ -45,6 +47,10 @@ export default function DeleteCampaignPage() {
     description: ""
   });
   
+  const { data: session, status } = useSession();
+  const isSuperAdmin = session?.user?.role === "Super Admin";
+  const hasPermission = isSuperAdmin || (session?.user as { permissions?: string[] })?.permissions?.includes("campaigns_delete");
+
   // Fetch campaign data
   useEffect(() => {
     const fetchCampaignData = async () => {
@@ -84,6 +90,9 @@ export default function DeleteCampaignPage() {
     
     fetchCampaignData();
   }, [campaignId, router]);
+
+  if (status === "loading") return null;
+  if (!hasPermission) return <NoAccess />;
   
   // Handle delete confirmation
   const handleDeleteConfirm = async () => {

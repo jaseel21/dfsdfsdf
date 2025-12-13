@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import ReceiptDetails from '@/components/users-section/receipts/ReceiptDetails';
 import { Receipt } from '@/components/users-section/receipts/ReceiptCard';

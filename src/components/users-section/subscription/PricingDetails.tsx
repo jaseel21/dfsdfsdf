@@ -1,3 +1,4 @@
+import React from 'react';
 import { FaHandHoldingHeart, FaLock, FaReceipt, FaCheckCircle } from 'react-icons/fa';
 
 const PricingDetails: React.FC = () => {

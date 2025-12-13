@@ -3,6 +3,14 @@ import Select from "react-select";
 import { useRouter } from "next/navigation";
 import { useLoading } from "@/context/LoadingContext";
 
+const OUTSIDE_KERALA_CITIES = [
+  { value: "Gudalur", label: "Gudalur" },
+  { value: "Nilgiri", label: "Nilgiri" },
+  { value: "Mangalore", label: "Mangalore" },
+  { value: "Bangalore", label: "Bangalore" },
+  { value: "Chennai", label: "Chennai" },
+];
+
 export function ContributionForm({
   campaign,
   form,
@@ -17,6 +25,7 @@ export function ContributionForm({
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [locationType, setLocationType] = useState("kerala");
   const { startLoading, stopLoading } = useLoading();
 
   const router = useRouter();
@@ -474,26 +483,76 @@ export function ContributionForm({
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location*</label>
+        {/* Radio buttons */}
+        <div className="flex items-center gap-6 mb-2">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="locationType"
+              value="kerala"
+              checked={locationType === "kerala"}
+              onChange={() => {
+                setLocationType("kerala");
+                setSelectedDistrict(null);
+                onFormChange({ ...form, location: "" });
+              }}
+            />
+            <span className="text-indigo-800 dark:text-indigo-200 font-medium">Kerala</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="locationType"
+              value="others"
+              checked={locationType === "others"}
+              onChange={() => {
+                setLocationType("others");
+                setSelectedDistrict(null);
+                onFormChange({ ...form, location: "" });
+              }}
+            />
+            <span className="text-indigo-800 dark:text-indigo-200 font-medium">Others</span>
+          </label>
+        </div>
         <div className="space-y-2">
-          <Select
-            options={districtOptions}
-            onChange={(selected) => handleDistrictChange(selected?.value || null)}
-            placeholder="Select your district first..."
-            isClearable
-            isSearchable
-            styles={customStyles}
-            className="w-full text-sm"
-          />
-          {selectedDistrict && (
+          {locationType === "kerala" ? (
+            <>
+              <Select
+                options={districtOptions}
+                onChange={(selected) => handleDistrictChange(selected?.value || null)}
+                placeholder="Select your district first..."
+                isClearable
+                isSearchable
+                styles={customStyles}
+                className="w-full text-sm"
+              />
+              {selectedDistrict && (
+                <Select
+                  options={filteredOptions}
+                  formatOptionLabel={formatOptionLabel}
+                  value={filteredOptions.find((option) => option.value === form.location) || null}
+                  onChange={(selected) => onFormChange({ ...form, location: selected?.value || "" })}
+                  placeholder={`Search in ${selectedDistrict}...`}
+                  isLoading={isLoadingLocations}
+                  styles={customStyles}
+                  isClearable
+                  className="w-full text-sm"
+                />
+              )}
+              {!selectedDistrict && form.location && (
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-800 rounded-lg text-indigo-700 dark:text-indigo-200 text-sm">
+                  Please select a district first to choose your specific location.
+                </div>
+              )}
+            </>
+          ) : (
             <Select
-              options={filteredOptions}
-              formatOptionLabel={formatOptionLabel}
-              value={filteredOptions.find((option) => option.value === form.location) || null}
+              options={OUTSIDE_KERALA_CITIES}
+              value={OUTSIDE_KERALA_CITIES.find((city) => city.value === form.location) || null}
               onChange={(selected) => onFormChange({ ...form, location: selected?.value || "" })}
-              placeholder={`Search in ${selectedDistrict}...`}
-              isLoading={isLoadingLocations}
-              styles={customStyles}
+              placeholder="Select your city..."
               isClearable
+              styles={customStyles}
               className="w-full text-sm"
             />
           )}

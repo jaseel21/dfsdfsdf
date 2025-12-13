@@ -1,6 +1,6 @@
 "use client";
 
-import  { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Volume2, VolumeX, Maximize, Minimize, Play, Pause, SkipForward, SkipBack } from "lucide-react";
 
 export default function VideoPlayerModal({ isOpen, onClose, videoUrl, videoTitle }) {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Select from 'react-select';
 import AnimatedEntry from './AnimatedEntry';
 import { useLoading } from '@/context/LoadingContext';
 
@@ -20,11 +21,90 @@ const MobileView = () => {
     panchayat: '',
     email: '',
   });
+  const [locationType, setLocationType] = useState('kerala');
+  const [locationOptions, setLocationOptions] = useState([]);
+  const [filteredOptions, setFilteredOptions] = useState([]);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   const amounts = [100, 500, 1000, 5000];
   const categories = ['General', 'Yatheem', 'Hafiz', 'Building'];
+
+  // Outside Kerala cities
+  const OUTSIDE_KERALA_CITIES = [
+    { value: "Gudalur", label: "Gudalur" },
+    { value: "Nilgiri", label: "Nilgiri" },
+    { value: "Mangalore", label: "Mangalore" },
+    { value: "Bangalore", label: "Bangalore" },
+    { value: "Chennai", label: "Chennai" },
+  ];
+
+  // Fetch and process Kerala location data
+  useEffect(() => {
+    if (locationType !== "kerala") return;
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch("/kerala_local.json");
+        const data = await response.json();
+
+        const options = [];
+
+        data.districts.forEach((district) => {
+          options.push({
+            value: district.name,
+            label: district.name,
+            type: "district",
+            district: district.name,
+          });
+
+          district.block_panchayats.forEach((block) => {
+            block.grama_panchayats.forEach((panchayat) => {
+              options.push({
+                value: `${district.name}, ${panchayat.name}`,
+                label: panchayat.name,
+                type: "panchayat",
+                district: district.name,
+              });
+            });
+          });
+
+          district.urban_local_bodies.forEach((urban) => {
+            options.push({
+              value: `${district.name}, ${urban.name}`,
+              label: urban.name,
+              type: urban.type === "Municipal Corporation" ? "corporation" : "municipality",
+              district: district.name,
+            });
+          });
+        });
+
+        setLocationOptions(options);
+        setFilteredOptions(options.filter((option) => option.type === "district"));
+        setIsLocationLoading(false);
+      } catch (error) {
+        console.error("Error loading location data:", error);
+        setIsLocationLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, [locationType]);
+
+  // Filter options when district is selected (Kerala only)
+  useEffect(() => {
+    if (locationType !== "kerala") return;
+    if (selectedDistrict) {
+      const filtered = locationOptions.filter(
+        (option) => option.district === selectedDistrict && option.type !== "district"
+      );
+      setFilteredOptions(filtered);
+    } else {
+      const districts = locationOptions.filter((option) => option.type === "district");
+      setFilteredOptions(districts);
+    }
+  }, [selectedDistrict, locationOptions, locationType]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -34,11 +114,129 @@ const MobileView = () => {
     }));
   };
 
+  // Handle location type change (Kerala/Others)
+  const handleLocationTypeChange = (type) => {
+    setLocationType(type);
+    setSelectedDistrict(null);
+    setFormData((prevState) => ({
+      ...prevState,
+      district: '',
+      panchayat: '',
+    }));
+  };
+
+  // Handle district selection (Kerala only)
+  const handleDistrictChange = (selectedOption) => {
+    const district = selectedOption?.value || null;
+    setSelectedDistrict(district);
+    setFormData((prevState) => ({
+      ...prevState,
+      district: district || '',
+      panchayat: '',
+    }));
+  };
+
+  // Handle panchayat/municipality/corporation selection (Kerala only)
+  const handlePanchayatChange = (selectedOption) => {
+    const location = selectedOption?.value || '';
+    const panchayat = location.split(', ')[1] || '';
+    setFormData((prevState) => ({
+      ...prevState,
+      panchayat: panchayat,
+    }));
+  };
+
+  // Handle others location selection
+  const handleOthersLocationChange = (selectedOption) => {
+    const location = selectedOption?.value || '';
+    setFormData((prevState) => ({
+      ...prevState,
+      district: location,
+      panchayat: '',
+    }));
+  };
+
+  // Get available districts for the dropdown
+  const districtOptions = locationOptions
+    .filter((option) => option.type === "district")
+    .map((district) => ({
+      value: district.district,
+      label: district.district,
+    }));
+
+  // Custom styles for react-select
+  const customStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderRadius: "0.75rem",
+      borderColor: state.isFocused ? "#6366f1" : "#6366f1",
+      backgroundColor: "#ffffff",
+      color: "#374151",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(99, 102, 241, 0.2)" : "none",
+      paddingLeft: "2.5rem",
+      paddingRight: "0.75rem",
+      paddingTop: "0.75rem",
+      paddingBottom: "0.75rem",
+      minHeight: "3rem",
+      "&:hover": {
+        borderColor: "#6366f1",
+      },
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      paddingLeft: "0",
+      paddingRight: "0.5rem",
+    }),
+    input: (base) => ({
+      ...base,
+      color: "#374151",
+      margin: "0",
+      paddingTop: "0",
+      paddingBottom: "0",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "#374151",
+      marginLeft: "0",
+      marginRight: "0",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#6366f1"
+        : state.isFocused
+        ? "#e0e7ff"
+        : "#ffffff",
+      color: state.isSelected ? "#ffffff" : "#374151",
+      padding: "8px 12px",
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: "#ffffff",
+      zIndex: 50,
+    }),
+    menuList: (base) => ({
+      ...base,
+      maxHeight: "200px",
+      backgroundColor: "#ffffff",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: "#9ca3af",
+      marginLeft: "0",
+      marginRight: "0",
+    }),
+  };
+
   const validateForm = () => {
     if (!formData.fullName.trim()) return 'Full name is required';
     if (!formData.phoneNumber.match(/^\d{10}$/)) return 'Valid 10-digit phone number is required';
-    if (!formData.district.trim()) return 'District is required';
-    if (!formData.panchayat.trim()) return 'Panchayat is required';
+    if (locationType === 'kerala') {
+      if (!selectedDistrict) return 'District is required';
+      if (!formData.panchayat.trim()) return 'Panchayat/Municipality/Corporation is required';
+    } else {
+      if (!formData.district.trim()) return 'Location is required';
+    }
     if (!selectedAmount && !customAmount) return 'Please select or enter a donation amount';
     if (customAmount && (parseInt(customAmount) <= 0 || isNaN(parseInt(customAmount)))) {
       return 'Please enter a valid donation amount';
@@ -102,8 +300,8 @@ const MobileView = () => {
                 name: formData.fullName,
                 phone: formData.phoneNumber,
                 type: donationCategory,
-                district: formData.district,
-                panchayat: formData.panchayat,
+                district: locationType === 'kerala' ? selectedDistrict : formData.district,
+                panchayat: locationType === 'kerala' ? formData.panchayat : '',
                 email: formData.email,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpayOrderId: response.razorpay_order_id,
@@ -127,8 +325,8 @@ const MobileView = () => {
                 `/donation/?donationId=${saveData.id}&amount=${donationAmount}&name=${encodeURIComponent(
                   formData.fullName
                 )}&phone=${formData.phoneNumber}&type=${donationCategory}&district=${
-                  formData.district || 'Other'
-                }&panchayat=${formData.panchayat || ''}&paymentId=${response.razorpay_payment_id}&orderId=${
+                  locationType === 'kerala' ? selectedDistrict : formData.district || 'Other'
+                }&panchayat=${locationType === 'kerala' ? formData.panchayat : ''}&paymentId=${response.razorpay_payment_id}&orderId=${
                   response.razorpay_order_id
                 }`
               );
@@ -396,10 +594,10 @@ const MobileView = () => {
                   <button
                     key={category}
                     onClick={() => setDonationCategory(category)}
-                    className={`py-3 px-3 rounded-xl text-center text-sm font-semibold text-indigo-800 ${
+                    className={`py-3 px-3 rounded-xl text-center text-sm font-semibold ${
                       donationCategory === category
-                        ? 'bg-indigo-100 border border-indigo-300'
-                        : 'bg-indigo-300'
+                        ? 'bg-indigo-600 border border-indigo-700 text-white'
+                        : 'bg-indigo-300 text-indigo-800'
                     }`}
                     disabled={isSubmitting}
                   >
@@ -477,78 +675,155 @@ const MobileView = () => {
                     </div>
                   </div>
 
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="district"
-                      value={formData.district}
-                      onChange={handleFormChange}
-                      placeholder="District"
-                      required
-                      disabled={isSubmitting}
-                      className="w-full px-4 py-3 pl-10 rounded-xl border border-indigo-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                    <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                  <div className="space-y-4">
+                    {/* Location Type Radio Buttons */}
+                    <div className="flex items-center gap-6 mb-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="locationType"
+                          value="kerala"
+                          checked={locationType === "kerala"}
+                          onChange={() => handleLocationTypeChange("kerala")}
+                          className="text-indigo-600 focus:ring-indigo-500"
                         />
-                        <path
-                          d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                        <span className="text-indigo-800 font-medium">Kerala</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="locationType"
+                          value="others"
+                          checked={locationType === "others"}
+                          onChange={() => handleLocationTypeChange("others")}
+                          className="text-indigo-600 focus:ring-indigo-500"
                         />
-                      </svg>
+                        <span className="text-indigo-800 font-medium">Others</span>
+                      </label>
                     </div>
-                  </div>
 
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="panchayat"
-                      value={formData.panchayat}
-                      onChange={handleFormChange}
-                      placeholder="Panchayat"
-                      required
-                      disabled={isSubmitting}
-                      className="w-full px-4 py-3 pl-10 rounded-xl border border-indigo-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                    <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                    {/* Kerala Location Selectors */}
+                    {locationType === "kerala" && (
+                      <>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400 z-10 pointer-events-none">
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                          <Select
+                            options={districtOptions}
+                            onChange={handleDistrictChange}
+                            placeholder="Select your district..."
+                            isClearable
+                            isSearchable
+                            styles={customStyles}
+                            className="w-full"
+                            isLoading={isLocationLoading}
+                            isDisabled={isSubmitting}
+                          />
+                        </div>
+
+                        {selectedDistrict && (
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400 z-10 pointer-events-none">
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M9 22V12H15V22"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                            <Select
+                              options={filteredOptions}
+                              value={filteredOptions.find((option) => option.value.split(', ')[1] === formData.panchayat)}
+                              onChange={handlePanchayatChange}
+                              placeholder={`Select location in ${selectedDistrict}...`}
+                              isLoading={isLocationLoading}
+                              styles={customStyles}
+                              isClearable
+                              className="w-full"
+                              isDisabled={isSubmitting}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Others Location Selector */}
+                    {locationType === "others" && (
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400 z-10 pointer-events-none">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                        <Select
+                          options={OUTSIDE_KERALA_CITIES}
+                          value={OUTSIDE_KERALA_CITIES.find((city) => city.value === formData.district)}
+                          onChange={handleOthersLocationChange}
+                          placeholder="Select your city..."
+                          isClearable
+                          styles={customStyles}
+                          className="w-full"
+                          isDisabled={isSubmitting}
                         />
-                        <path
-                          d="M9 22V12H15V22"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="relative">
@@ -621,31 +896,10 @@ const MobileView = () => {
                       placeholder="Enter custom amount"
                       disabled={isSubmitting}
                       min="1"
-                      className="w-full px-4 py-3 pl-10 rounded-xl border border-indigo-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 pl-9 rounded-xl border border-indigo-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    <div className="absolute inset-y-0 left-3 flex items-center text-indigo-400">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12 1V23"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H6"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                    <div className="absolute inset-y-0 left-3 flex items-center text-indigo-500 font-semibold text-lg">
+                      ₹
                     </div>
                   </div>
 
