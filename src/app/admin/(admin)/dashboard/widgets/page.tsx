@@ -1,6 +1,5 @@
 // src/app/(admin)/dashboard/widgets/page.tsx
 "use client";
-import React from "react";
 import BarChart from "@/components/donation/BarChart";
 import PieChart from "@/components/donation/PieChart";
 import LineChart from "@/components/donation/LineChart";

@@ -2,8 +2,6 @@ import GridShape from "@/components/common/GridShape";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
-
 export const metadata: Metadata = {
   title: "Next.js Error 404 | AIC Amal App - Donation Platform",
   description:

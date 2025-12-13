@@ -1,7 +1,5 @@
 // src/app/(admin)/institutions/allocations/page.tsx
 "use client";
-import React from "react";
-
 export default function ViewAllocationsPage() {
   return (
     <div className="p-6 space-y-6">

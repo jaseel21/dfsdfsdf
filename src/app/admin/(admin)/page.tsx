@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import React from "react";
-
 // Import custom components
 import DonationMetrics from "@/components/donation/DonationMetrics";
 import CampaignProgress from "@/components/donation/CampaignProgress";

@@ -1,7 +1,5 @@
 // src/app/(admin)/boxes/overview/page.tsx
 "use client";
-import React from "react";
-
 export default function BoxOverviewPage() {
   return (
     <div className="p-6 space-y-6">

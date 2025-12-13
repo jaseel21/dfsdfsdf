@@ -1,7 +1,5 @@
 // src/app/(admin)/reports/generate/page.tsx
 "use client";
-import React from "react";
-
 export default function GenerateReportsPage() {
   return (
     <div className="p-6 space-y-6">

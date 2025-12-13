@@ -1,6 +1,4 @@
 "use client";
-import React from "react";
-
 const RecentDonations = () => {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">

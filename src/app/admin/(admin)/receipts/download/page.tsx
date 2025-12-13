@@ -1,7 +1,5 @@
 // src/app/(admin)/receipts/download/page.tsx
 "use client";
-import React from "react";
-
 export default function DownloadReceiptsPage() {
   return (
     <div className="p-6 space-y-6">

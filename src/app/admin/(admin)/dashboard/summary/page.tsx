@@ -1,6 +1,5 @@
 // src/app/(admin)/dashboard/summary/page.tsx
 "use client";
-import React from "react";
 import DonationMetrics from "@/components/donation/DonationMetrics";
 import CampaignProgress from "@/components/donation/CampaignProgress";
 import SponsorshipOverview from "@/components/donation/SponsorshipOverview";
