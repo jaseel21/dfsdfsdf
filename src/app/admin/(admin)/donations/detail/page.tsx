@@ -1,6 +1,6 @@
 // src/app/admin/(admin)/donations/detail/page.tsx
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from 'next/navigation';
 import {

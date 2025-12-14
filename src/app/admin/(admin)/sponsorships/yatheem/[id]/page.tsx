@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, X, UserPlus, Search, Phone, MapPin, GraduationCap, School, Calendar, TrendingUp, DollarSign, Receipt, Edit2, Check, AlertCircle, FileText, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ArrowLeft, Plus, Trash2, X, UserPlus, Search, Phone, MapPin, GraduationCap, School, TrendingUp, DollarSign, Receipt, Check, AlertCircle, FileText, Clock } from "lucide-react";
 import Link from "next/link";
 
 interface Yatheem {
@@ -37,7 +37,7 @@ interface CustomField {
 
 export default function YatheemDetailPage() {
   const params = useParams();
-  const router = useRouter();
+
   const id = params.id as string;
 
   const [yatheem, setYatheem] = useState<Yatheem | null>(null);
@@ -206,7 +206,7 @@ export default function YatheemDetailPage() {
         });
         if (!sponsorResponse.ok) throw new Error("Failed to update sponsor");
       }
-      
+
       const response = await fetch(`/api/yatheem/${id}`, {
         method: "PUT",
         headers: {
@@ -216,7 +216,7 @@ export default function YatheemDetailPage() {
         body: JSON.stringify({ sponsorId: null }),
       });
       if (!response.ok) throw new Error("Failed to unassign sponsor");
-      
+
       await fetchYatheem();
     } catch (error) {
       console.error("Error unassigning sponsor:", error);
@@ -227,13 +227,13 @@ export default function YatheemDetailPage() {
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
   const filteredSponsors = searchSponsor
     ? sponsors.filter(
-        (s) =>
-          s.name?.toLowerCase().includes(searchSponsor.toLowerCase()) ||
-          s.phone?.includes(searchSponsor)
-      )
+      (s) =>
+        s.name?.toLowerCase().includes(searchSponsor.toLowerCase()) ||
+        s.phone?.includes(searchSponsor)
+    )
     : sponsors;
 
-  const sponsorCoverage = yatheem?.sponsorId 
+  const sponsorCoverage = yatheem?.sponsorId
     ? Math.min(100, (yatheem.sponsorId.paidAmount / totalExpenses) * 100)
     : 0;
 
@@ -296,7 +296,7 @@ export default function YatheemDetailPage() {
         <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl overflow-hidden">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-          
+
           <div className="relative p-6 md:p-8">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-shrink-0">
@@ -306,7 +306,7 @@ export default function YatheemDetailPage() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <h1 className="text-3xl md:text-4xl font-bold text-white">
@@ -316,7 +316,7 @@ export default function YatheemDetailPage() {
                     {yatheem.status}
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all">
                     <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ export default function YatheemDetailPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -341,7 +341,7 @@ export default function YatheemDetailPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -353,7 +353,7 @@ export default function YatheemDetailPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -408,7 +408,7 @@ export default function YatheemDetailPage() {
               </p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-green-500 to-emerald-500 h-full rounded-full transition-all duration-500"
                     style={{ width: `${sponsorCoverage}%` }}
                   />
@@ -455,7 +455,7 @@ export default function YatheemDetailPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-6">
             {yatheem.sponsorId ? (
               <div className="space-y-6">
@@ -472,7 +472,7 @@ export default function YatheemDetailPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-2 mb-2">
@@ -483,7 +483,7 @@ export default function YatheemDetailPage() {
                           {yatheem.sponsorId.phone}
                         </p>
                       </div>
-                      
+
                       <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-2 mb-2">
                           <DollarSign className="h-4 w-4 text-gray-500" />
@@ -493,7 +493,7 @@ export default function YatheemDetailPage() {
                           ₹{yatheem.sponsorId.selectedAmount?.toLocaleString('en-IN')}
                         </p>
                       </div>
-                      
+
                       <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-2 mb-2">
                           <Check className="h-4 w-4 text-green-500" />
@@ -513,7 +513,7 @@ export default function YatheemDetailPage() {
                         </span>
                       </div>
                       <div className="w-full bg-white dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
-                        <div 
+                        <div
                           className="bg-gradient-to-r from-green-500 to-emerald-500 h-full rounded-full transition-all duration-700 shadow-lg"
                           style={{ width: `${Math.min(100, (yatheem.sponsorId.paidAmount / yatheem.sponsorId.selectedAmount) * 100)}%` }}
                         />
@@ -524,7 +524,7 @@ export default function YatheemDetailPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={handleUnassignSponsor}
                     className="lg:self-start px-5 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium border border-red-200 dark:border-red-800 shadow-sm hover:shadow flex items-center gap-2"
@@ -587,7 +587,7 @@ export default function YatheemDetailPage() {
                   </div>
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">Add New Expense</h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -602,7 +602,7 @@ export default function YatheemDetailPage() {
                       placeholder="e.g., School fees, Books, Uniform"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       Amount (₹) *
@@ -627,7 +627,7 @@ export default function YatheemDetailPage() {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                     Additional Information (Optional)
                   </label>
-                  
+
                   {expenseForm.customFields.length > 0 && (
                     <div className="space-y-2 mb-4">
                       {expenseForm.customFields.map((field, index) => (
@@ -646,7 +646,7 @@ export default function YatheemDetailPage() {
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -734,10 +734,10 @@ export default function YatheemDetailPage() {
                           </h4>
                           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
                             <Clock className="h-4 w-4" />
-                            <span>{new Date(expense.createdAt).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
+                            <span>{new Date(expense.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
                             })}</span>
                           </div>
                           {expense.customFields && expense.customFields.length > 0 && (
@@ -752,7 +752,7 @@ export default function YatheemDetailPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-4 sm:flex-col sm:items-end">
                         <div className="text-right">
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount</p>
@@ -829,11 +829,10 @@ export default function YatheemDetailPage() {
                     return (
                       <div
                         key={sponsor._id}
-                        className={`p-5 border-2 rounded-xl transition-all ${
-                          isAssigned
-                            ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 opacity-60'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg bg-white dark:bg-gray-800'
-                        }`}
+                        className={`p-5 border-2 rounded-xl transition-all ${isAssigned
+                          ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 opacity-60'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg bg-white dark:bg-gray-800'
+                          }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="flex items-start gap-4 flex-1">

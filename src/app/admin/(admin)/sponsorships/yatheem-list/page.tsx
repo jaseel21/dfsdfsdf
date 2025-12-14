@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, Plus, Edit, Trash2, ArrowLeft, Loader2, UserPlus, Users, 
-  X, Phone, MapPin, School, GraduationCap, Filter, Download,
-  CheckCircle, XCircle, MoreVertical, Eye, TrendingUp
+import {
+  Search, Plus, Trash2, ArrowLeft, Loader2, UserPlus, Users,
+  X, Phone, MapPin, School, GraduationCap,
+  CheckCircle, XCircle, Eye
 } from "lucide-react";
 import Link from "next/link";
 
@@ -58,7 +58,7 @@ export default function ProfessionalYatheemList() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [searchSponsor, setSearchSponsor] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-  const [selectedYatheem, setSelectedYatheem] = useState<Yatheem | null>(null);
+
 
   useEffect(() => {
     fetchYatheem();
@@ -206,10 +206,10 @@ export default function ProfessionalYatheemList() {
 
   const filteredSponsors = searchSponsor
     ? sponsors.filter(
-        (s) =>
-          s.name?.toLowerCase().includes(searchSponsor.toLowerCase()) ||
-          s.phone?.includes(searchSponsor)
-      )
+      (s) =>
+        s.name?.toLowerCase().includes(searchSponsor.toLowerCase()) ||
+        s.phone?.includes(searchSponsor)
+    )
     : sponsors;
 
   const handleOpenAssignModal = (yatheemId: string) => {
@@ -625,36 +625,33 @@ export default function ProfessionalYatheemList() {
                   className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-all"
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <div className="flex bg-white dark:bg-gray-700 rounded-xl border-2 border-gray-200 dark:border-gray-600 p-1">
                   <button
                     onClick={() => setFilterStatus("all")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      filterStatus === "all"
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterStatus === "all"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
                   >
                     All
                   </button>
                   <button
                     onClick={() => setFilterStatus("assigned")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      filterStatus === "assigned"
-                        ? "bg-green-600 text-white shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterStatus === "assigned"
+                      ? "bg-green-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
                   >
                     Assigned
                   </button>
                   <button
                     onClick={() => setFilterStatus("unassigned")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      filterStatus === "unassigned"
-                        ? "bg-orange-600 text-white shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterStatus === "unassigned"
+                      ? "bg-orange-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
                   >
                     Pending
                   </button>
@@ -663,11 +660,10 @@ export default function ProfessionalYatheemList() {
                 <div className="flex bg-white dark:bg-gray-700 rounded-xl border-2 border-gray-200 dark:border-gray-600 p-1">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-all ${
-                      viewMode === "grid"
-                        ? "bg-indigo-600 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === "grid"
+                      ? "bg-indigo-600 text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
                   >
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -675,11 +671,10 @@ export default function ProfessionalYatheemList() {
                   </button>
                   <button
                     onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-all ${
-                      viewMode === "table"
-                        ? "bg-indigo-600 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === "table"
+                      ? "bg-indigo-600 text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
                   >
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />

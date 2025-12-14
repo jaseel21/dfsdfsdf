@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 import { CauseFormData, CauseType } from "./types";
 import CauseForm from "./CauseForm";
 
@@ -23,12 +23,12 @@ const CauseCard = ({
   onDeactivate,
   onSubmit,
 }: CauseCardProps) => {
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 },
+      transition: { type: "spring", stiffness: 100 } as Transition,
     },
   };
 

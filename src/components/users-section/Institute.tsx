@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 
 const Institute: React.FC = () => {
   const [form, setForm] = useState({ 
@@ -60,23 +60,21 @@ const Institute: React.FC = () => {
   };
   
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+      transition: { staggerChildren: 0.1 } as Transition,
+    },
   };
-  
-  const itemVariants = {
+
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 }
-    }
+      transition: { type: "spring", stiffness: 100 } as Transition,
+    },
   };
 
   return (

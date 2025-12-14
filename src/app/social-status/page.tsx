@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import NextImage from "next/image";
 import VideoThumbnail from "./VideoThumbnail";
 import {

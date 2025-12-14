@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 import { useState, useEffect } from "react";
 
 const HeroSection: React.FC = () => {
@@ -21,49 +21,36 @@ const HeroSection: React.FC = () => {
   }, []);
 
   // Animation variants
-  const headerVariants = {
+  const headerVariants: Variants = {
     hidden: { opacity: 0, y: -20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
-        duration: 0.6,
-        ease: "easeOut" 
-      }
-    }
+      transition: { duration: 0.6, ease: "easeOut" } as Transition,
+    },
   };
 
-  const textVariants = {
+  const textVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: (custom: number) => ({
       opacity: 1,
       y: 0,
-      transition: {
-        delay: custom * 0.2,
-        duration: 0.8,
-        ease: "easeOut"
-      }
-    })
+      transition: { delay: custom * 0.2, duration: 0.8, ease: "easeOut" } as Transition,
+    }),
   };
   
-  const buttonVariants = {
+  const buttonVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
-      transition: {
-        delay: 0.6,
-        duration: 0.5,
-        ease: "easeOut"
-      }
+      transition: { delay: 0.6, duration: 0.5, ease: "easeOut" } as Transition,
     },
     hover: {
       scale: 1.05,
       boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.5)",
-      transition: {
-        duration: 0.3
-      }
-    }
+      transition: { duration: 0.3 } as Transition,
+    },
   };
   
   // const statsVariants = {

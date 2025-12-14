@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 
 const sections = [
     {
@@ -90,24 +90,18 @@ const sections = [
 ];
 
 export const OptionsSection = () => {
-    const cardVariants = {
+    const cardVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: (custom: number) => ({
             opacity: 1,
             y: 0,
-            transition: {
-                delay: custom * 0.1,
-                duration: 0.5,
-                ease: "easeOut"
-            }
+            transition: { delay: custom * 0.1, duration: 0.5, ease: "easeOut" } as Transition,
         }),
         hover: {
             y: -10,
             boxShadow: "0 20px 25px -5px rgba(59, 130, 246, 0.3)",
-            transition: {
-                duration: 0.3
-            }
-        }
+            transition: { duration: 0.3 } as Transition,
+        },
     };
 
     return (

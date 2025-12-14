@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
 import { auth, sendOTP, isTestMode } from "@/lib/firebase";

@@ -1,6 +1,6 @@
 // src/app/campaigns/track/page.jsx
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation"; // Add useRouter
 import {

@@ -1,6 +1,6 @@
 // Enhanced YouTube Component with Animations and Custom Controls
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 

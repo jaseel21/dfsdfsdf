@@ -1,5 +1,5 @@
 // src/components/subscription/OtpVerification.tsx
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 
 interface OtpVerificationProps {
   phoneNumber: string;
@@ -23,23 +23,21 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
   otpError,
   setLoginStep
 }) => {
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { 
-        staggerChildren: 0.1
-      }
-    }
+      transition: { staggerChildren: 0.1 } as Transition,
+    },
   };
-  
-  const itemVariants = {
+
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
+    visible: {
+      y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 150 }
-    }
+      transition: { type: "spring", stiffness: 150 } as Transition,
+    },
   };
 
   return (

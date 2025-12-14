@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 import { Campaign } from "../types";
 
 interface CampaignCardProps {
@@ -47,10 +47,12 @@ export function CampaignCard({ campaign, isActive, onClick }: CampaignCardProps)
 
   return (
     <motion.div
-      variants={{
-        hidden: { y: 30, opacity: 0 },
-        visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 70, damping: 12 } },
-      }}
+      variants={
+        {
+          hidden: { y: 30, opacity: 0 },
+          visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 70, damping: 12 } as Transition },
+        } as Variants
+      }
       className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${isActive ? "ring-2 ring-purple-400 dark:ring-purple-600" : ""} group`}
     >
       <div className="relative h-56 w-full">

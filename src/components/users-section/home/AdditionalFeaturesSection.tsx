@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, Variants, Transition } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 // Define the props type for FeatureCard
@@ -18,17 +18,13 @@ const FeatureCard = ({ icon, title, description, link, index }: FeatureCardProps
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 50 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        delay: index * 0.1,
-        ease: "easeOut"
-      }
-    }
+      transition: { duration: 0.6, delay: index * 0.1, ease: "easeOut" } as Transition,
+    },
   };
 
   const handleCardClick = () => {

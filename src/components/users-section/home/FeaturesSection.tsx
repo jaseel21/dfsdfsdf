@@ -1,7 +1,7 @@
 "use client";
 
 import { JSX, useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, Variants, Transition } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 const FeatureCard = ({
@@ -21,16 +21,12 @@ const FeatureCard = ({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 50 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        delay: index * 0.2,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.6, delay: index * 0.2, ease: "easeOut" } as Transition,
     },
   };
 

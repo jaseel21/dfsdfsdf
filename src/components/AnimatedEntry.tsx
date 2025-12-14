@@ -48,7 +48,7 @@ const AnimatedEntry = () => {
       duration: 3,
       ease: "linear",
       repeat: Infinity,
-    });
+    } as any);
 
     return () => clearInterval(interval);
   }, [widthAnim, opacityAnim, rotation]);
