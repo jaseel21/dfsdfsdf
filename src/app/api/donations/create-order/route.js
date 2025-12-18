@@ -25,6 +25,8 @@ export async function POST(req) {
       razorpaySubscriptionId,
       planId,
       period,
+      selectedAmount,
+      paymentType,
     } = await req.json();
 
     console.log(email,name,phone,type,"eeeeeeeeeeeeeeeeemail");
@@ -113,6 +115,8 @@ export async function POST(req) {
           razorpaySubscriptionId,
           planId,
           period:period || "null"
+          ,selectedAmount,
+          paymentType,
         },
       };
 
