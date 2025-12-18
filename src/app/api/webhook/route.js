@@ -266,6 +266,8 @@ export async function POST(req) {
         instituteId,
         boxId,
         period,
+        paymentType,
+        selectedAmount,
       } = payment.notes || {};
 
       console.log("Payment notes:", payment.notes);
@@ -505,6 +507,31 @@ export async function POST(req) {
 
 
 
+      }else  if(type==="Sponsor-Yatheem-Plan"){
+
+        const paymentData = {
+                amount: amount,
+                name: fullName,
+                phone: phone,
+                type: "Sponsor-Yatheem-Plan",
+                email: email,
+                district: district,
+                panchayat: panchayat,
+                period:period,
+                razorpayPaymentId: paymentId,
+                razorpayOrderId: payment.order_id,       
+                selectedAmount: selectedAmount,
+                paymentType: paymentType,
+              };
+
+              const saveResponse = await fetch("/api/sponsorships/create", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+                },
+                body: JSON.stringify(paymentData),
+              });
       }
     }
 

@@ -146,14 +146,17 @@ export default function ProfessionalSponsorDashboard({
           "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
         body: JSON.stringify({
-          amount: amount * 100,
-          type: sponsorData.type,
+          
+          type: "Sponsor-Yatheem-Plan",
           name: sponsorData.name,
           phone: sponsorData.phone,
           email: sponsorData.email,
           district: sponsorData.district,
           panchayat: sponsorData.panchayat,
           period: sponsorData.period,
+          amount: amount * 100,
+          selectedAmount: sponsorData.selectedAmount,
+          paymentType: isExtraExpense ? "extra" : "main",
         }),
       });
 
@@ -170,33 +173,33 @@ export default function ProfessionalSponsorDashboard({
           order_id: orderData.orderId,
           handler: async (response: any) => {
             try {
-              const paymentData = {
-                amount: amount,
-                name: sponsorData.name,
-                phone: sponsorData.phone,
-                type: sponsorData.type,
-                email: sponsorData.email,
-                district: sponsorData.district,
-                panchayat: sponsorData.panchayat,
-                period: sponsorData.period,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySignature: response.razorpay_signature,
-                selectedAmount: sponsorData.selectedAmount,
-                paymentType: isExtraExpense ? "extra" : "main",
-              };
+              // const paymentData = {
+              //   amount: amount,
+              //   name: sponsorData.name,
+              //   phone: sponsorData.phone,
+              //   type: sponsorData.type,
+              //   email: sponsorData.email,
+              //   district: sponsorData.district,
+              //   panchayat: sponsorData.panchayat,
+              //   period: sponsorData.period,
+              //   razorpayPaymentId: response.razorpay_payment_id,
+              //   razorpayOrderId: response.razorpay_order_id,
+              //   razorpaySignature: response.razorpay_signature,
+              //   selectedAmount: sponsorData.selectedAmount,
+              //   paymentType: isExtraExpense ? "extra" : "main",
+              // };
 
-              const saveResponse = await fetch("/api/sponsorships/create", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-                },
-                body: JSON.stringify(paymentData),
-              });
+              // const saveResponse = await fetch("/api/sponsorships/create", {
+              //   method: "POST",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //     "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+              //   },
+              //   body: JSON.stringify(paymentData),
+              // });
 
-              const saveData = await saveResponse.json();
-              if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save payment");
+              // const saveData = await saveResponse.json();
+              // if (!saveResponse.ok) throw new Error(saveData.error || "Failed to save payment");
 
               await fetchSponsorData();
               setShowPaymentOptions(false);
