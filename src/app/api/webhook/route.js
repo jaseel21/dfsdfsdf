@@ -554,7 +554,7 @@ export async function POST(req) {
             if (!saveResponse.ok) {
               console.error("Failed to save sponsorship (non-OK response):", saveResponse.status, json,{ status: 100 });
             } else {
-              console.log("Sponsorship saved successfully:", json,{ status: 200 });
+              console.log("Sponsorship saved successfully:", json,{ status: 700 });
             }
           } catch (err) {
             console.error("Error saving sponsorship for Sponsor-Yatheem-Plan:", err,{ status: 900 });
