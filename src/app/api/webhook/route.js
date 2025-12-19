@@ -532,7 +532,7 @@ export async function POST(req) {
           console.log("Sponsor-Yatheem-Plan paymentData:", paymentData);
 
           try {
-            const url = `${process.env.API_BASE_URL || ""}/api/sponsorships/create`;
+            const url = `${process.env.API_BASE_URL}/api/sponsorships/create`;
             const saveResponse = await fetch(url, {
               method: "POST",
               headers: {
