@@ -532,13 +532,13 @@ export async function POST(req) {
           console.log("Sponsor-Yatheem-Plan paymentData:", paymentData);
 
           try {
-            const url = `${process.env.API_BASE_URL}/api/sponsorships/create`;
+            const url = `${process.env.API_BASE_URL || ""}/api/sponsorships/create`;
             const saveResponse = await fetch(url, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 // Pull the API key from env for safety; fallback to the hardcoded one if missing
-                "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+                "x-api-key": process.env.INTERNAL_API_KEY || "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
               },
               body: JSON.stringify(paymentData),
             });
