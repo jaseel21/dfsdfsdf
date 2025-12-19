@@ -8,10 +8,11 @@ import Sdonation from "@/models/Sdonation";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-const verifySignature = (body, signature, secret) => {
+const verifySignature = (rawBody, signature, secret) => {
   const hmac = crypto.createHmac("sha256", secret);
-  hmac.update(JSON.stringify(body));
-  return hmac.digest("hex") === signature;
+  hmac.update(rawBody, "utf8");
+  const digest = hmac.digest("hex");
+  return digest === signature;
 };
 
 // Function to standardize phone numbers
@@ -45,8 +46,8 @@ export async function POST(req) {
 
     console.log("Received webhook event:", event.event);
 
-    if (!verifySignature(event, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
-      console.error("Invalid signature for webhook event:", event.event);
+    if (!verifySignature(rawBody, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
+      console.error("Invalid signature for webhook event:", event.event, { signature });
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
@@ -507,31 +508,58 @@ export async function POST(req) {
 
 
 
-      }else  if(type==="Sponsor-Yatheem-Plan"){
+      } else if (type === "Sponsor-Yatheem-Plan") {
 
         const paymentData = {
-                amount: amount,
-                name: fullName,
-                phone: standardizedPhone,
-                type: "Sponsor-Yatheem-Plan",
-                email: emailAddress,
-                district: district,
-                panchayat: panchayat,
-                period:period,
-                razorpayPaymentId: paymentId,
-                razorpayOrderId: payment.order_id,       
-                selectedAmount: selectedAmount,
-                paymentType: paymentType,
-              };
+          amount: amount,
+          name: fullName,
+          phone: standardizedPhone,
+          type: "Sponsor-Yatheem-Plan",
+          email: emailAddress,
+          district: district,
+          panchayat: panchayat,
+          period: period,
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: payment.order_id,
+          selectedAmount: selectedAmount,
+          paymentType: paymentType,
+        };
 
-              const saveResponse = await fetch("/api/sponsorships/create", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
-                },
-                body: JSON.stringify(paymentData),
-              });
+        // Basic sanity checks before calling the app API
+        if (!standardizedPhone) {
+          console.error("Skipping Sponsor-Yatheem-Plan: missing or invalid phone", { paymentId, notes: payment.notes });
+        } else {
+          console.log("Sponsor-Yatheem-Plan paymentData:", paymentData);
+
+          try {
+            const url = `${process.env.API_BASE_URL || ""}/api/sponsorships/create`;
+            const saveResponse = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                // Pull the API key from env for safety; fallback to the hardcoded one if missing
+                "x-api-key": process.env.INTERNAL_API_KEY || "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+              },
+              body: JSON.stringify(paymentData),
+            });
+
+            const text = await saveResponse.text();
+            let json;
+            try {
+              json = JSON.parse(text);
+            } catch (e) {
+              json = text;
+            }
+
+            if (!saveResponse.ok) {
+              console.error("Failed to save sponsorship (non-OK response):", saveResponse.status, json);
+            } else {
+              console.log("Sponsorship saved successfully:", json);
+            }
+          } catch (err) {
+            console.error("Error saving sponsorship for Sponsor-Yatheem-Plan:", err);
+          }
+        }
       }
     }
 
