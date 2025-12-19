@@ -693,6 +693,7 @@ export async function POST(req) {
       }
     }
 
+
     // Handle subscription.cancelled event
     // This fires when a subscription is cancelled (either by user or admin)
     if (event.event === "subscription.cancelled") {
