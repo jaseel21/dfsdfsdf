@@ -512,9 +512,9 @@ export async function POST(req) {
         const paymentData = {
                 amount: amount,
                 name: fullName,
-                phone: phone,
+                phone: standardizedPhone,
                 type: "Sponsor-Yatheem-Plan",
-                email: email,
+                email: emailAddress,
                 district: district,
                 panchayat: panchayat,
                 period:period,

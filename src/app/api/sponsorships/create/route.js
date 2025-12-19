@@ -30,6 +30,7 @@ export async function POST(req) {
       panchayat,
       razorpayPaymentId,
       razorpayOrderId,
+      razorpaySignature,
       selectedAmount, // For existing sponsors
       paymentType = "main", // "main" or "extra"
     } = body;
@@ -125,6 +126,7 @@ export async function POST(req) {
         panchayat: panchayat || sponsor.panchayat,
         razorpayPaymentId,
         razorpayOrderId,
+        razorpaySignature,
         status: "Completed",
         createdAt: new Date(),
       });
@@ -193,6 +195,7 @@ export async function POST(req) {
       panchayat: panchayat,
       razorpayPaymentId,
       razorpayOrderId,
+      razorpaySignature,
       status: "Completed",
       createdAt: new Date(),
     });
