@@ -32,7 +32,7 @@ export async function POST(req) {
       razorpayOrderId,
       razorpaySignature,
       selectedAmount, // For existing sponsors
-      paymentType = "main", // "main" or "extra"
+      paymentType, // "main" or "extra"
     } = body;
 
     // Validate required fields
