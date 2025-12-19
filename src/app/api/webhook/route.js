@@ -538,7 +538,7 @@ export async function POST(req) {
               headers: {
                 "Content-Type": "application/json",
                 // Pull the API key from env for safety; fallback to the hardcoded one if missing
-                "x-api-key": process.env.INTERNAL_API_KEY || "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
+                "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
               },
               body: JSON.stringify(paymentData),
             });
@@ -552,12 +552,12 @@ export async function POST(req) {
             }
 
             if (!saveResponse.ok) {
-              console.error("Failed to save sponsorship (non-OK response):", saveResponse.status, json);
+              console.error("Failed to save sponsorship (non-OK response):", saveResponse.status, json,{ status: 100 });
             } else {
-              console.log("Sponsorship saved successfully:", json);
+              console.log("Sponsorship saved successfully:", json,{ status: 200 });
             }
           } catch (err) {
-            console.error("Error saving sponsorship for Sponsor-Yatheem-Plan:", err);
+            console.error("Error saving sponsorship for Sponsor-Yatheem-Plan:", err,{ status: 900 });
           }
         }
       }
